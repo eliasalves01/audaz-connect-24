@@ -1,40 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Audaz ERP Design System - Contemporary blue palette with professional styling */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Background and surface colors */
+    --background: 0 0% 98%;
+    --foreground: 215 25% 20%;
+    --surface: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
 
+    /* Audaz Blue Palette - Primary brand colors */
+    --primary: 221 83% 53%; /* #2563eb */
+    --primary-hover: 221 83% 45%; /* #1d4ed8 */
+    --primary-active: 221 83% 40%; /* #1e40af */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary and accent colors */
+    --secondary: 215 20% 65%;
+    --secondary-foreground: 215 25% 20%;
+    --accent: 215 15% 95%;
+    --accent-foreground: 215 25% 20%;
+
+    /* Neutral grays - Background and text hierarchy */
+    --muted: 215 15% 95%;
+    --muted-foreground: 215 15% 45%;
+    --border: 215 15% 90%;
+    --input: 215 15% 95%;
+    --ring: 221 83% 53%;
+
+    /* Status colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 215 25% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Gradients for modern effects */
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(221 83% 45%));
+    --gradient-surface: linear-gradient(135deg, hsl(0 0% 100%), hsl(215 15% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(215 15% 95%), hsl(215 15% 92%));
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Shadows for depth */
+    --shadow-sm: 0 1px 2px 0 hsl(215 25% 20% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(215 25% 20% / 0.1), 0 2px 4px -1px hsl(215 25% 20% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(215 25% 20% / 0.1), 0 4px 6px -2px hsl(215 25% 20% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(215 25% 20% / 0.1), 0 10px 10px -5px hsl(215 25% 20% / 0.04);
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Border radius system */
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-lg: 1rem;
 
     --radius: 0.5rem;
 
@@ -100,6 +127,57 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Typography system */
+  .text-display {
+    @apply text-4xl font-bold tracking-tight;
+  }
+  
+  .text-heading-1 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+  
+  .text-heading-2 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  
+  .text-heading-3 {
+    @apply text-xl font-medium tracking-tight;
+  }
+  
+  .text-body-large {
+    @apply text-lg font-normal;
+  }
+  
+  .text-body {
+    @apply text-base font-normal;
+  }
+  
+  .text-body-small {
+    @apply text-sm font-normal;
+  }
+  
+  .text-caption {
+    @apply text-xs font-medium tracking-wide uppercase;
+  }
+
+  /* Custom component styles */
+  .card-elevated {
+    background: var(--gradient-surface);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .button-gradient {
+    background: var(--gradient-primary);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .button-gradient:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
   }
 }
