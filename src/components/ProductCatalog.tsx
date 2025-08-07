@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import { ProductModal } from "@/components/modals/ProductModal";
+import { ProductDetailModal } from "@/components/modals/ProductDetailModal";
+import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
 import { 
   Plus, 
   Search, 
@@ -15,11 +19,30 @@ import {
   Ruler
 } from "lucide-react";
 
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  size: string;
+  color: string;
+  price: string;
+  description: string;
+  image: string;
+  status: string;
+  stock: number;
+}
+
 export const ProductCatalog = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const products = [
+  const [products, setProducts] = useState<Product[]>([
     {
       id: "BL001",
       name: "Blusa Feminina Floral",
@@ -68,7 +91,7 @@ export const ProductCatalog = () => {
       status: "Disponível",
       stock: 12
     }
-  ];
+  ]);
 
   const categories = ["all", "Blusas", "Calças", "Vestidos", "Blazers"];
 
@@ -78,6 +101,48 @@ export const ProductCatalog = () => {
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const handleAddProduct = () => {
+    setEditingProduct(null);
+    setIsProductModalOpen(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setIsProductModalOpen(true);
+  };
+
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleSaveProduct = (productData: Product) => {
+    if (editingProduct) {
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
+    } else {
+      setProducts(prev => [...prev, productData]);
+    }
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const confirmDeleteProduct = () => {
+    if (selectedProduct) {
+      setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
+      toast({
+        title: "Produto removido",
+        description: "O produto foi removido com sucesso do catálogo"
+      });
+    }
+    setIsDeleteDialogOpen(false);
+    setSelectedProduct(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -97,7 +162,7 @@ export const ProductCatalog = () => {
             Gerencie o catálogo completo de peças
           </p>
         </div>
-        <Button className="button-gradient">
+        <Button className="button-gradient" onClick={handleAddProduct}>
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Produto
         </Button>
@@ -188,15 +253,29 @@ export const ProductCatalog = () => {
                   </div>
 
                   <div className="flex gap-1">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleViewProduct(product)}
+                    >
                       <Eye className="h-3 w-3 mr-1" />
                       Ver
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditProduct(product)}
+                    >
                       <Edit className="h-3 w-3 mr-1" />
                       Editar
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDeleteProduct(product)}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
@@ -212,6 +291,29 @@ export const ProductCatalog = () => {
           )}
         </CardContent>
       </Card>
+
+      <ProductModal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        product={editingProduct}
+        onSave={handleSaveProduct}
+      />
+
+      <ProductDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        product={selectedProduct}
+        onEdit={handleEditProduct}
+      />
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDeleteProduct}
+        title="Remover Produto"
+        description={`Tem certeza que deseja remover o produto "${selectedProduct?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Remover"
+      />
     </div>
   );
 };

@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import { ResellerModal } from "@/components/modals/ResellerModal";
+import { ResellerDetailModal } from "@/components/modals/ResellerDetailModal";
+import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
 import { 
   Plus, 
   Search, 
@@ -16,10 +20,30 @@ import {
   Calendar
 } from "lucide-react";
 
-export const ResellerManagement = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+interface Reseller {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  totalPurchases: string;
+  lastOrder: string;
+  status: string;
+  ordersCount: number;
+  joinDate: string;
+}
 
-  const resellers = [
+export const ResellerManagement = () => {
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isResellerModalOpen, setIsResellerModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedReseller, setSelectedReseller] = useState<Reseller | null>(null);
+  const [editingReseller, setEditingReseller] = useState<Reseller | null>(null);
+
+  const [resellers, setResellers] = useState<Reseller[]>([
     {
       id: 1,
       name: "Maria Silva",
@@ -72,13 +96,55 @@ export const ResellerManagement = () => {
       ordersCount: 12,
       joinDate: "2024-03-05"
     }
-  ];
+  ]);
 
   const filteredResellers = resellers.filter(reseller =>
     reseller.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     reseller.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     reseller.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleAddReseller = () => {
+    setEditingReseller(null);
+    setIsResellerModalOpen(true);
+  };
+
+  const handleEditReseller = (reseller: Reseller) => {
+    setEditingReseller(reseller);
+    setIsResellerModalOpen(true);
+  };
+
+  const handleViewReseller = (reseller: Reseller) => {
+    setSelectedReseller(reseller);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDeleteReseller = (reseller: Reseller) => {
+    setSelectedReseller(reseller);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleSaveReseller = (resellerData: Reseller) => {
+    if (editingReseller) {
+      setResellers(prev => prev.map(r => r.id === editingReseller.id ? resellerData : r));
+    } else {
+      setResellers(prev => [...prev, resellerData]);
+    }
+    setIsResellerModalOpen(false);
+    setEditingReseller(null);
+  };
+
+  const confirmDeleteReseller = () => {
+    if (selectedReseller) {
+      setResellers(prev => prev.filter(r => r.id !== selectedReseller.id));
+      toast({
+        title: "Revendedor removido",
+        description: "O revendedor foi removido com sucesso do sistema"
+      });
+    }
+    setIsDeleteDialogOpen(false);
+    setSelectedReseller(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -98,7 +164,7 @@ export const ResellerManagement = () => {
             Gerencie todos os revendedores cadastrados no sistema
           </p>
         </div>
-        <Button className="button-gradient">
+        <Button className="button-gradient" onClick={handleAddReseller}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Revendedor
         </Button>
@@ -166,13 +232,25 @@ export const ResellerManagement = () => {
                       </Badge>
                     </div>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewReseller(reseller)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditReseller(reseller)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteReseller(reseller)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -216,7 +294,11 @@ export const ResellerManagement = () => {
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-border">
-                    <Button variant="outline" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => handleViewReseller(reseller)}
+                    >
                       <TrendingUp className="h-4 w-4 mr-2" />
                       Ver Relatório Completo
                     </Button>
@@ -233,6 +315,29 @@ export const ResellerManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      <ResellerModal
+        isOpen={isResellerModalOpen}
+        onClose={() => setIsResellerModalOpen(false)}
+        reseller={editingReseller}
+        onSave={handleSaveReseller}
+      />
+
+      <ResellerDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        reseller={selectedReseller}
+        onEdit={handleEditReseller}
+      />
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDeleteReseller}
+        title="Remover Revendedor"
+        description={`Tem certeza que deseja remover o revendedor "${selectedReseller?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Remover"
+      />
     </div>
   );
 };
