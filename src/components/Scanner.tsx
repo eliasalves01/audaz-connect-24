@@ -17,6 +17,15 @@ import {
 interface ScannerProps {
   onClose: () => void;
   onScanSuccess: (code: string) => void;
+  inventory?: Array<{
+    id: string;
+    name: string;
+    price: string;
+    category: string;
+    status: string;
+    soldDate?: string;
+  }>;
+  mode?: 'info' | 'baixa';
   recentSales?: Array<{
     id: string;
     name: string;
@@ -24,11 +33,18 @@ interface ScannerProps {
   }>;
 }
 
-export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerProps) => {
+export const Scanner = ({ 
+  onClose, 
+  onScanSuccess, 
+  inventory = [], 
+  mode = 'info',
+  recentSales = [] 
+}: ScannerProps) => {
   const [isManualMode, setIsManualMode] = useState(false);
   const [manualInput, setManualInput] = useState("");
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [error, setError] = useState("");
+  const [scannedItem, setScannedItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
@@ -85,14 +101,40 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
       });
       return;
     }
-    onScanSuccess(manualInput.trim().toUpperCase());
+    handleCodeScanned(manualInput.trim().toUpperCase());
+  };
+
+  const handleCodeScanned = (code: string) => {
+    const item = inventory.find(i => i.id.toLowerCase() === code.toLowerCase());
+    
+    if (!item) {
+      toast({
+        title: "Código não encontrado",
+        description: "Nenhuma peça encontrada com este código",
+        variant: "destructive"
+      });
+      setScannedItem(null);
+      return;
+    }
+
+    setScannedItem(item);
+    setManualInput("");
+    
+    if (mode === 'baixa') {
+      onScanSuccess(code);
+    } else {
+      toast({
+        title: "Peça encontrada!",
+        description: `${item.name} - ${item.price}`,
+      });
+    }
   };
 
   const handleScanCapture = () => {
     // Simula um scan bem-sucedido para demonstração
     // Em produção, aqui seria integrado com uma biblioteca de QR/barcode
     const simulatedCode = "BL001";
-    onScanSuccess(simulatedCode);
+    handleCodeScanned(simulatedCode);
   };
 
   return (
@@ -106,9 +148,16 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
                 <ScanLine className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-heading-2">Scanner de Código</h2>
+                <h2 className="text-heading-2">
+                  {mode === 'baixa' ? 'Dar Baixa' : 'Scanner de Código'}
+                </h2>
                 <p className="text-body-small text-muted-foreground">
-                  {isManualMode ? "Digite o código da peça" : "Aponte para o código da peça"}
+                  {isManualMode 
+                    ? "Digite o código da peça" 
+                    : mode === 'baixa' 
+                      ? "Escaneie para dar baixa" 
+                      : "Escaneie para ver informações"
+                  }
                 </p>
               </div>
             </div>
@@ -222,7 +271,7 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
                   <div className="flex gap-2">
                     <Button type="submit" className="button-gradient flex-1">
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirmar Baixa
+                      {mode === 'baixa' ? 'Confirmar Baixa' : 'Buscar Peça'}
                     </Button>
                     <Button 
                       type="button" 
@@ -234,6 +283,31 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
                     </Button>
                   </div>
                 </form>
+
+                {/* Scanned Item Display */}
+                {scannedItem && (
+                  <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge variant="secondary">{scannedItem.id}</Badge>
+                      <Badge className={scannedItem.status === 'Disponível' ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}>
+                        {scannedItem.status}
+                      </Badge>
+                    </div>
+                    <h3 className="text-heading-3 mb-2">{scannedItem.name}</h3>
+                    <p className="text-heading-3 text-primary mb-2">{scannedItem.price}</p>
+                    <p className="text-body-small text-muted-foreground">{scannedItem.category}</p>
+                    
+                    {mode === 'baixa' && scannedItem.status === 'Disponível' && (
+                      <Button 
+                        className="w-full mt-4" 
+                        onClick={() => onScanSuccess(scannedItem.id)}
+                      >
+                        <ScanLine className="h-4 w-4 mr-2" />
+                        Confirmar Baixa
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

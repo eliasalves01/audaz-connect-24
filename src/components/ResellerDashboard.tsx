@@ -203,7 +203,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
         <div className="flex gap-2">
           <Button className="button-gradient" onClick={() => setShowScanner(true)}>
             <ScanLine className="h-4 w-4 mr-2" />
-            Dar Baixa
+            Scanner
           </Button>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
@@ -503,6 +503,8 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
         <Scanner
           onClose={() => setShowScanner(false)}
           onScanSuccess={handleScanSuccess}
+          inventory={inventory}
+          mode="info"
           recentSales={inventory.filter(i => i.status === "Vendida")}
         />
       )}
