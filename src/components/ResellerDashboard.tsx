@@ -283,66 +283,69 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
             {filteredInventory.map((item) => (
               <Card key={item.id} className="group hover:shadow-audaz-lg transition-all duration-200">
-                <div className="aspect-square bg-accent/50 rounded-t-lg flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                </div>
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className="text-caption">
-                      {item.id}
-                    </Badge>
-                    <Badge className={getStatusColor(item.status)}>
-                      {item.status === 'Disponível' ? (
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                      ) : (
-                        <Clock className="h-3 w-3 mr-1" />
-                      )}
-                      {item.status}
-                    </Badge>
-                  </div>
-                  
-                  <h3 className="text-heading-3 mb-2 line-clamp-2">{item.name}</h3>
-                  
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center gap-2 text-body-small text-muted-foreground">
-                      <Tag className="h-3 w-3" />
-                      <span>{item.category}</span>
+                  <div className="flex gap-4">
+                    <div className="w-24 h-24 bg-accent/50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
                     </div>
-                    <div className="flex items-center gap-4 text-body-small text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Ruler className="h-3 w-3" />
-                        <span>{item.size}</span>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-caption">
+                            {item.id}
+                          </Badge>
+                          <h3 className="text-heading-3 truncate">{item.name}</h3>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className="text-heading-3 text-primary">{item.price}</span>
+                          <Badge className={getStatusColor(item.status)}>
+                            {item.status === 'Disponível' ? (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Clock className="h-3 w-3 mr-1" />
+                            )}
+                            {item.status}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Palette className="h-3 w-3" />
-                        <span>{item.color}</span>
+                      
+                      <div className="flex items-center gap-4 mb-3 text-body-small text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Tag className="h-3 w-3" />
+                          <span>{item.category}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Ruler className="h-3 w-3" />
+                          <span>{item.size}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Palette className="h-3 w-3" />
+                          <span>{item.color}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-body-small text-muted-foreground mb-3">
+                        <span>Comprada: {new Date(item.purchaseDate).toLocaleDateString('pt-BR')}</span>
+                        {item.soldDate && (
+                          <span className="ml-4">Vendida: {new Date(item.soldDate).toLocaleDateString('pt-BR')}</span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleViewItem(item)}>
+                          <Eye className="h-3 w-3 mr-1" />
+                          Ver Detalhes
+                        </Button>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-heading-3 text-primary">{item.price}</span>
-                  </div>
-
-                  <div className="text-body-small text-muted-foreground mb-3">
-                    <p>Comprada: {new Date(item.purchaseDate).toLocaleDateString('pt-BR')}</p>
-                    {item.soldDate && (
-                      <p>Vendida: {new Date(item.soldDate).toLocaleDateString('pt-BR')}</p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-1">
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewItem(item)}>
-                      <Eye className="h-3 w-3 mr-1" />
-                      Ver Detalhes
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
