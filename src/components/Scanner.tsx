@@ -138,7 +138,7 @@ export const Scanner = ({
     } else {
       toast({
         title: "Peça encontrada!",
-        description: `${item.name} - ${item.price}`,
+        description: `${item.name} - ${item.price || 'Preço não definido'}`,
       });
     }
   };

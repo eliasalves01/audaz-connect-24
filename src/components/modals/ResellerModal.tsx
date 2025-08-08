@@ -5,55 +5,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-
-interface Reseller {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  state: string;
-  totalPurchases: string;
-  lastOrder: string;
-  status: string;
-  ordersCount: number;
-  joinDate: string;
-}
+import { type Revendedor } from "@/hooks/useRevendedores";
 
 interface ResellerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reseller?: Reseller;
-  onSave: (reseller: Reseller) => void;
+  reseller?: Revendedor;
+  onSave: (reseller: Partial<Revendedor>) => void;
 }
 
 export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerModalProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Reseller>(
-    reseller || {
-      id: 0,
-      name: '',
-      email: '',
-      phone: '',
-      city: '',
-      state: '',
-      totalPurchases: 'R$ 0,00',
-      lastOrder: new Date().toISOString().split('T')[0],
-      status: 'Ativo',
-      ordersCount: 0,
-      joinDate: new Date().toISOString().split('T')[0]
-    }
-  );
-
-  const brazilianStates = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
-    'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
-  ];
+  const [formData, setFormData] = useState({
+    nome: reseller?.nome || '',
+    email: reseller?.email || '',
+    telefone: reseller?.telefone || '',
+    endereco: reseller?.endereco || '',
+    ativo: reseller?.ativo ?? true
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone) {
+    if (!formData.nome || !formData.email) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -62,20 +36,11 @@ export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerMod
       return;
     }
 
-    // Generate ID if new reseller
-    if (!formData.id) {
-      formData.id = Date.now();
-    }
-
     onSave(formData);
-    toast({
-      title: "Sucesso",
-      description: reseller ? "Revendedor atualizado com sucesso!" : "Revendedor adicionado com sucesso!"
-    });
     onClose();
   };
 
-  const handleChange = (field: keyof Reseller, value: string | number) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -92,11 +57,11 @@ export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerMod
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo *</Label>
+              <Label htmlFor="nome">Nome Completo *</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => handleChange('nome', e.target.value)}
                 placeholder="Ex: Maria Silva"
               />
             </div>
@@ -115,82 +80,38 @@ export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerMod
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone *</Label>
+              <Label htmlFor="telefone">Telefone</Label>
               <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
+                id="telefone"
+                value={formData.telefone}
+                onChange={(e) => handleChange('telefone', e.target.value)}
                 placeholder="(11) 98765-4321"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
+              <Label htmlFor="ativo">Status</Label>
+              <Select value={formData.ativo ? "true" : "false"} onValueChange={(value) => handleChange('ativo', value === "true")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Ativo">Ativo</SelectItem>
-                  <SelectItem value="Inativo">Inativo</SelectItem>
-                  <SelectItem value="Suspenso">Suspenso</SelectItem>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">Cidade</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => handleChange('city', e.target.value)}
-                placeholder="São Paulo"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="state">Estado</Label>
-              <Select value={formData.state} onValueChange={(value) => handleChange('state', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {brazilianStates.map((state) => (
-                    <SelectItem key={state} value={state}>
-                      {state}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="endereco">Endereço</Label>
+            <Input
+              id="endereco"
+              value={formData.endereco}
+              onChange={(e) => handleChange('endereco', e.target.value)}
+              placeholder="Rua, Cidade, Estado"
+            />
           </div>
-
-          {reseller && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="totalPurchases">Total de Compras</Label>
-                <Input
-                  id="totalPurchases"
-                  value={formData.totalPurchases}
-                  onChange={(e) => handleChange('totalPurchases', e.target.value)}
-                  placeholder="R$ 0,00"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="ordersCount">Número de Pedidos</Label>
-                <Input
-                  id="ordersCount"
-                  type="number"
-                  value={formData.ordersCount}
-                  onChange={(e) => handleChange('ordersCount', parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

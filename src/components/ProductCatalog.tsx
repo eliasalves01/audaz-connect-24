@@ -61,22 +61,12 @@ export const ProductCatalog = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSaveProduct = async (productData: any) => {
+  const handleSaveProduct = async (productData: Omit<Produto, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const produto = {
-        codigo: productData.id,
-        nome: productData.name,
-        categoria: productData.category,
-        tamanho: productData.size,
-        preco: parseFloat(productData.price.replace(/[R$\s,]/g, '').replace('.', '')),
-        imagem_url: productData.image,
-        ativo: true
-      };
-
       if (editingProduct) {
-        await atualizarProduto(editingProduct.id, produto);
+        await atualizarProduto(editingProduct.id, productData);
       } else {
-        await adicionarProduto(produto);
+        await adicionarProduto(productData);
       }
       
       setIsProductModalOpen(false);
@@ -238,14 +228,7 @@ export const ProductCatalog = () => {
       <ProductModal
         isOpen={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}
-        product={editingProduct ? {
-          id: editingProduct.codigo,
-          name: editingProduct.nome,
-          category: editingProduct.categoria,
-          size: editingProduct.tamanho || '',
-          price: `R$ ${editingProduct.preco.toFixed(2).replace('.', ',')}`,
-          image: editingProduct.imagem_url
-        } : undefined}
+        product={editingProduct}
         onSave={handleSaveProduct}
       />
 

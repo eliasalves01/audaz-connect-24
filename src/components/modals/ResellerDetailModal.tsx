@@ -3,38 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Phone, MapPin, Calendar, TrendingUp, ShoppingCart, Package } from "lucide-react";
-
-interface Reseller {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  state: string;
-  totalPurchases: string;
-  lastOrder: string;
-  status: string;
-  ordersCount: number;
-  joinDate: string;
-}
+import { type Revendedor } from "@/hooks/useRevendedores";
 
 interface ResellerDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reseller: Reseller | null;
-  onEdit: (reseller: Reseller) => void;
+  reseller: Revendedor | null;
+  onEdit: (reseller: Revendedor) => void;
 }
 
 export const ResellerDetailModal = ({ isOpen, onClose, reseller, onEdit }: ResellerDetailModalProps) => {
   if (!reseller) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Ativo': return 'bg-success/10 text-success border-success/20';
-      case 'Inativo': return 'bg-muted/10 text-muted-foreground border-muted/20';
-      case 'Suspenso': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
-    }
+  const getStatusColor = (ativo: boolean) => {
+    return ativo 
+      ? 'bg-success/10 text-success border-success/20'
+      : 'bg-muted/10 text-muted-foreground border-muted/20';
   };
 
   return (
@@ -47,15 +31,15 @@ export const ResellerDetailModal = ({ isOpen, onClose, reseller, onEdit }: Resel
         <div className="space-y-6">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-heading-2 mb-2">{reseller.name}</h3>
-              <Badge className={getStatusColor(reseller.status)}>
-                {reseller.status}
+              <h3 className="text-heading-2 mb-2">{reseller.nome}</h3>
+              <Badge className={getStatusColor(reseller.ativo)}>
+                {reseller.ativo ? 'Ativo' : 'Inativo'}
               </Badge>
             </div>
             <div className="text-right">
-              <p className="text-body-small text-muted-foreground">ID: #{reseller.id}</p>
+              <p className="text-body-small text-muted-foreground">ID: {reseller.id.substring(0, 8)}</p>
               <p className="text-body-small text-muted-foreground">
-                Cliente desde {new Date(reseller.joinDate).toLocaleDateString('pt-BR')}
+                Cliente desde {new Date(reseller.created_at).toLocaleDateString('pt-BR')}
               </p>
             </div>
           </div>
@@ -73,14 +57,18 @@ export const ResellerDetailModal = ({ isOpen, onClose, reseller, onEdit }: Resel
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <span>{reseller.email}</span>
                 </div>
-                <div className="flex items-center gap-2 text-body">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{reseller.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-body">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{reseller.city}, {reseller.state}</span>
-                </div>
+                {reseller.telefone && (
+                  <div className="flex items-center gap-2 text-body">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{reseller.telefone}</span>
+                  </div>
+                )}
+                {reseller.endereco && (
+                  <div className="flex items-center gap-2 text-body">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{reseller.endereco}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -93,16 +81,16 @@ export const ResellerDetailModal = ({ isOpen, onClose, reseller, onEdit }: Resel
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-body-small text-muted-foreground">Total de Compras</span>
-                  <span className="text-heading-3 text-primary">{reseller.totalPurchases}</span>
+                  <span className="text-body-small text-muted-foreground">Revendedor desde</span>
+                  <span className="text-heading-3 text-primary">{new Date(reseller.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-body-small text-muted-foreground">Total de Pedidos</span>
-                  <span className="text-heading-3">{reseller.ordersCount}</span>
+                  <span className="text-body-small text-muted-foreground">Status</span>
+                  <span className="text-heading-3">{reseller.ativo ? 'Ativo' : 'Inativo'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-body-small text-muted-foreground">Último Pedido</span>
-                  <span className="text-body">{new Date(reseller.lastOrder).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-body-small text-muted-foreground">Última atualização</span>
+                  <span className="text-body">{new Date(reseller.updated_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               </CardContent>
             </Card>

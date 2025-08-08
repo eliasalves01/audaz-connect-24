@@ -5,43 +5,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  size: string;
-  price: string;
-  image?: string;
-}
+import { type Produto } from "@/hooks/useProdutos";
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product?: Product;
-  onSave: (product: Product) => void;
+  product?: Produto;
+  onSave: (product: Omit<Produto, 'id' | 'created_at' | 'updated_at'>) => void;
 }
 
 export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Product>(
-    product || {
-      id: '',
-      name: '',
-      category: '',
-      size: '',
-      price: '',
-      image: ''
-    }
-  );
+  const [formData, setFormData] = useState({
+    codigo: product?.codigo || '',
+    nome: product?.nome || '',
+    categoria: product?.categoria || '',
+    tamanho: product?.tamanho || '',
+    preco: product?.preco || 0,
+    imagem_url: product?.imagem_url || '',
+    ativo: product?.ativo ?? true
+  });
 
-  const categories = ["short", "oversized", "longline"];
+  const categories = ["blusa", "short", "oversized", "longline", "vestido", "calça"];
   const sizes = ["PP", "P", "M", "G", "GG"];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.price) {
+    if (!formData.nome || !formData.categoria || !formData.preco) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -50,34 +41,19 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
       return;
     }
 
-    // Generate ID if new product
-    if (!formData.id) {
-      const prefix = formData.category.substring(0, 2).toUpperCase();
+    // Generate codigo if new product and no codigo provided
+    if (!formData.codigo) {
+      const prefix = formData.categoria.substring(0, 2).toUpperCase();
       const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      formData.id = `${prefix}${random}`;
+      formData.codigo = `${prefix}${random}`;
     }
 
     onSave(formData);
-    toast({
-      title: "Sucesso",
-      description: product ? "Produto atualizado com sucesso!" : "Produto adicionado com sucesso!"
-    });
     onClose();
   };
 
-  const handleChange = (field: keyof Product, value: string | number) => {
+  const handleChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   return (
@@ -93,36 +69,46 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do Produto *</Label>
+              <Label htmlFor="codigo">Código do Produto</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Ex: Blusa Feminina Floral"
+                id="codigo"
+                value={formData.codigo}
+                onChange={(e) => handleChange('codigo', e.target.value)}
+                placeholder="Ex: BL001 (deixe vazio para gerar automático)"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria *</Label>
-              <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
+              <Label htmlFor="nome">Nome do Produto *</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => handleChange('nome', e.target.value)}
+                placeholder="Ex: Blusa Feminina Floral"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="categoria">Categoria *</Label>
+              <Select value={formData.categoria} onValueChange={(value) => handleChange('categoria', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
-                      {category}
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+            
             <div className="space-y-2">
-              <Label htmlFor="size">Tamanho</Label>
-              <Select value={formData.size} onValueChange={(value) => handleChange('size', value)}>
+              <Label htmlFor="tamanho">Tamanho</Label>
+              <Select value={formData.tamanho || ''} onValueChange={(value) => handleChange('tamanho', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tamanho" />
                 </SelectTrigger>
@@ -135,33 +121,52 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="preco">Preço *</Label>
+              <Input
+                id="preco"
+                type="number"
+                step="0.01"
+                value={formData.preco}
+                onChange={(e) => handleChange('preco', parseFloat(e.target.value) || 0)}
+                placeholder="89.90"
+              />
+            </div>
             
             <div className="space-y-2">
-              <Label htmlFor="price">Preço *</Label>
-              <Input
-                id="price"
-                value={formData.price}
-                onChange={(e) => handleChange('price', e.target.value)}
-                placeholder="R$ 89,90"
-              />
+              <Label htmlFor="ativo">Status</Label>
+              <Select value={formData.ativo ? "true" : "false"} onValueChange={(value) => handleChange('ativo', value === "true")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Imagem do Produto</Label>
+            <Label htmlFor="imagem_url">URL da Imagem</Label>
             <Input
-              id="image"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="cursor-pointer"
+              id="imagem_url"
+              value={formData.imagem_url || ''}
+              onChange={(e) => handleChange('imagem_url', e.target.value)}
+              placeholder="https://exemplo.com/imagem.jpg"
             />
-            {formData.image && (
+            {formData.imagem_url && (
               <div className="mt-2">
                 <img 
-                  src={formData.image} 
+                  src={formData.imagem_url} 
                   alt="Preview" 
                   className="w-20 h-20 object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
             )}
