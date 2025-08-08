@@ -201,10 +201,6 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="button-gradient" onClick={() => setShowScanner(true)}>
-            <ScanLine className="h-4 w-4 mr-2" />
-            Scanner
-          </Button>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Relatório
@@ -344,16 +340,10 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                   </div>
 
                   <div className="flex gap-1">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewItem(item)}>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewItem(item)}>
                       <Eye className="h-3 w-3 mr-1" />
-                      Detalhes
+                      Ver Detalhes
                     </Button>
-                    {item.status === 'Disponível' && (
-                      <Button size="sm" className="flex-1" onClick={() => setShowScanner(true)}>
-                        <ScanLine className="h-3 w-3 mr-1" />
-                        Baixar
-                      </Button>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -378,6 +368,12 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           <p className="text-body text-muted-foreground">
             Escaneie ou digite o código da peça para dar baixa
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button className="button-gradient" onClick={() => setShowScanner(true)}>
+            <ScanLine className="h-4 w-4 mr-2" />
+            Abrir Scanner
+          </Button>
         </div>
       </div>
 
@@ -504,7 +500,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           onClose={() => setShowScanner(false)}
           onScanSuccess={handleScanSuccess}
           inventory={inventory}
-          mode="info"
+          mode="baixa"
           recentSales={inventory.filter(i => i.status === "Vendida")}
         />
       )}
