@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ProductModal } from "@/components/modals/ProductModal";
 import { ProductDetailModal } from "@/components/modals/ProductDetailModal";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
+import { useProdutos, type Produto } from "@/hooks/useProdutos";
 import { 
   Plus, 
   Search, 
@@ -16,61 +17,27 @@ import {
   Eye,
   Tag,
   Palette,
-  Ruler
+  Ruler,
+  Loader2
 } from "lucide-react";
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  size: string;
-  price: string;
-  image?: string;
-}
 
 export const ProductCatalog = () => {
   const { toast } = useToast();
+  const { produtos, loading, adicionarProduto, atualizarProduto, removerProduto } = useProdutos();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "SH001",
-      name: "Camiseta Short Básica",
-      category: "short",
-      size: "M",
-      price: "R$ 89,90",
-      image: "/placeholder.svg"
-    },
-    {
-      id: "OV002", 
-      name: "Moletom Oversized",
-      category: "oversized",
-      size: "G",
-      price: "R$ 159,90",
-      image: "/placeholder.svg"
-    },
-    {
-      id: "LO003",
-      name: "Blusa Longline Listrada",
-      category: "longline",
-      size: "P",
-      price: "R$ 199,90",
-      image: "/placeholder.svg"
-    }
-  ]);
+  const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
 
   const categories = ["all", "short", "oversized", "longline"];
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+  const filteredProducts = produtos.filter(produto => {
+    const matchesSearch = produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         produto.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || produto.categoria === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -79,38 +46,53 @@ export const ProductCatalog = () => {
     setIsProductModalOpen(true);
   };
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
+  const handleEditProduct = (produto: Produto) => {
+    setEditingProduct(produto);
     setIsProductModalOpen(true);
   };
 
-  const handleViewProduct = (product: Product) => {
-    setSelectedProduct(product);
+  const handleViewProduct = (produto: Produto) => {
+    setSelectedProduct(produto);
     setIsDetailModalOpen(true);
   };
 
-  const handleDeleteProduct = (product: Product) => {
-    setSelectedProduct(product);
+  const handleDeleteProduct = (produto: Produto) => {
+    setSelectedProduct(produto);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSaveProduct = (productData: Product) => {
-    if (editingProduct) {
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
-    } else {
-      setProducts(prev => [...prev, productData]);
+  const handleSaveProduct = async (productData: any) => {
+    try {
+      const produto = {
+        codigo: productData.id,
+        nome: productData.name,
+        categoria: productData.category,
+        tamanho: productData.size,
+        preco: parseFloat(productData.price.replace(/[R$\s,]/g, '').replace('.', '')),
+        imagem_url: productData.image,
+        ativo: true
+      };
+
+      if (editingProduct) {
+        await atualizarProduto(editingProduct.id, produto);
+      } else {
+        await adicionarProduto(produto);
+      }
+      
+      setIsProductModalOpen(false);
+      setEditingProduct(null);
+    } catch (error) {
+      // Erro já tratado no hook
     }
-    setIsProductModalOpen(false);
-    setEditingProduct(null);
   };
 
-  const confirmDeleteProduct = () => {
+  const confirmDeleteProduct = async () => {
     if (selectedProduct) {
-      setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
-      toast({
-        title: "Produto removido",
-        description: "O produto foi removido com sucesso do catálogo"
-      });
+      try {
+        await removerProduto(selectedProduct.id);
+      } catch (error) {
+        // Erro já tratado no hook
+      }
     }
     setIsDeleteDialogOpen(false);
     setSelectedProduct(null);
@@ -167,74 +149,85 @@ export const ProductCatalog = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-audaz-lg transition-all duration-200">
-                <CardContent className="p-4">
-                  <div className="flex gap-4">
-                    <div className="w-24 h-24 bg-accent/50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-caption">
-                            {product.id}
-                          </Badge>
-                          <h3 className="text-heading-3 truncate">{product.name}</h3>
-                        </div>
-                        <span className="text-heading-3 text-primary ml-4">{product.price}</span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Carregando produtos...</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredProducts.map((produto) => (
+                <Card key={produto.id} className="group hover:shadow-audaz-lg transition-all duration-200">
+                  <CardContent className="p-4">
+                    <div className="flex gap-4">
+                      <div className="w-24 h-24 bg-accent/50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img 
+                          src={produto.imagem_url || "/placeholder.svg"} 
+                          alt={produto.nome}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
                       </div>
                       
-                      <div className="flex items-center gap-4 mb-4 text-body-small text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Tag className="h-3 w-3" />
-                          <span>{product.category}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-caption">
+                              {produto.codigo}
+                            </Badge>
+                            <h3 className="text-heading-3 truncate">{produto.nome}</h3>
+                          </div>
+                          <span className="text-heading-3 text-primary ml-4">
+                            R$ {produto.preco.toFixed(2).replace('.', ',')}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Ruler className="h-3 w-3" />
-                          <span>{product.size}</span>
+                        
+                        <div className="flex items-center gap-4 mb-4 text-body-small text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Tag className="h-3 w-3" />
+                            <span>{produto.categoria}</span>
+                          </div>
+                          {produto.tamanho && (
+                            <div className="flex items-center gap-1">
+                              <Ruler className="h-3 w-3" />
+                              <span>{produto.tamanho}</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
 
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewProduct(product)}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Ver
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditProduct(product)}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteProduct(product)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewProduct(produto)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Ver
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditProduct(produto)}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteProduct(produto)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-          {filteredProducts.length === 0 && (
+          {!loading && filteredProducts.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Nenhum produto encontrado</p>
             </div>
@@ -245,15 +238,33 @@ export const ProductCatalog = () => {
       <ProductModal
         isOpen={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}
-        product={editingProduct}
+        product={editingProduct ? {
+          id: editingProduct.codigo,
+          name: editingProduct.nome,
+          category: editingProduct.categoria,
+          size: editingProduct.tamanho || '',
+          price: `R$ ${editingProduct.preco.toFixed(2).replace('.', ',')}`,
+          image: editingProduct.imagem_url
+        } : undefined}
         onSave={handleSaveProduct}
       />
 
       <ProductDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        product={selectedProduct}
-        onEdit={handleEditProduct}
+        product={selectedProduct ? {
+          id: selectedProduct.codigo,
+          name: selectedProduct.nome,
+          category: selectedProduct.categoria,
+          size: selectedProduct.tamanho || '',
+          price: `R$ ${selectedProduct.preco.toFixed(2).replace('.', ',')}`,
+          image: selectedProduct.imagem_url
+        } : null}
+        onEdit={(product) => {
+          if (selectedProduct) {
+            handleEditProduct(selectedProduct);
+          }
+        }}
       />
 
       <ConfirmDialog
@@ -261,7 +272,7 @@ export const ProductCatalog = () => {
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={confirmDeleteProduct}
         title="Remover Produto"
-        description={`Tem certeza que deseja remover o produto "${selectedProduct?.name}"? Esta ação não pode ser desfeita.`}
+        description={`Tem certeza que deseja remover o produto "${selectedProduct?.nome}"? Esta ação não pode ser desfeita.`}
         confirmText="Remover"
       />
     </div>

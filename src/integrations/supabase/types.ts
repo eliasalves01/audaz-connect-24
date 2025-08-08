@@ -131,6 +131,203 @@ export type Database = {
         }
         Relationships: []
       }
+      estoque_revendedor: {
+        Row: {
+          codigo_peca: string
+          cor: string | null
+          created_at: string
+          data_compra: string
+          data_venda: string | null
+          id: string
+          observacoes: string | null
+          preco_compra: number
+          preco_venda: number | null
+          produto_id: string
+          revendedor_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_peca: string
+          cor?: string | null
+          created_at?: string
+          data_compra: string
+          data_venda?: string | null
+          id?: string
+          observacoes?: string | null
+          preco_compra: number
+          preco_venda?: number | null
+          produto_id: string
+          revendedor_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_peca?: string
+          cor?: string | null
+          created_at?: string
+          data_compra?: string
+          data_venda?: string | null
+          id?: string
+          observacoes?: string | null
+          preco_compra?: number
+          preco_venda?: number | null
+          produto_id?: string
+          revendedor_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_revendedor_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_revendedor_revendedor_id_fkey"
+            columns: ["revendedor_id"]
+            isOneToOne: false
+            referencedRelation: "revendedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_pedido: {
+        Row: {
+          created_at: string
+          id: string
+          pedido_id: string
+          preco_unitario: number
+          produto_id: string
+          quantidade: number
+          subtotal: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pedido_id: string
+          preco_unitario: number
+          produto_id: string
+          quantidade?: number
+          subtotal: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pedido_id?: string
+          preco_unitario?: number
+          produto_id?: string
+          quantidade?: number
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_pedido_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_pedido_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          created_at: string
+          data_entrega: string | null
+          data_pedido: string
+          id: string
+          numero_pedido: string
+          observacoes: string | null
+          revendedor_id: string
+          status: string
+          total_itens: number
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          data_entrega?: string | null
+          data_pedido?: string
+          id?: string
+          numero_pedido: string
+          observacoes?: string | null
+          revendedor_id: string
+          status?: string
+          total_itens?: number
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          data_entrega?: string | null
+          data_pedido?: string
+          id?: string
+          numero_pedido?: string
+          observacoes?: string | null
+          revendedor_id?: string
+          status?: string
+          total_itens?: number
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_revendedor_id_fkey"
+            columns: ["revendedor_id"]
+            isOneToOne: false
+            referencedRelation: "revendedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          codigo: string
+          created_at: string
+          id: string
+          imagem_url: string | null
+          nome: string
+          preco: number
+          tamanho: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          codigo: string
+          created_at?: string
+          id?: string
+          imagem_url?: string | null
+          nome: string
+          preco: number
+          tamanho?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          codigo?: string
+          created_at?: string
+          id?: string
+          imagem_url?: string | null
+          nome?: string
+          preco?: number
+          tamanho?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       professores: {
         Row: {
           ativo: boolean
@@ -160,6 +357,39 @@ export type Database = {
           instrumento?: string
           nome?: string
           telefone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      revendedores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
           updated_at?: string
         }
         Relationships: []

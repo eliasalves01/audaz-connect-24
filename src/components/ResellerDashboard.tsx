@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Scanner } from "./Scanner";
+import { useEstoque } from "@/hooks/useEstoque";
+import { useRevendedores } from "@/hooks/useRevendedores";
 import { 
   Package, 
   TrendingUp, 
@@ -18,7 +20,8 @@ import {
   Clock,
   Tag,
   Palette,
-  Ruler
+  Ruler,
+  Loader2
 } from "lucide-react";
 
 interface ResellerDashboardProps {
@@ -30,129 +33,128 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [scannerInput, setScannerInput] = useState("");
+  const [currentRevendedor, setCurrentRevendedor] = useState<string | null>(null);
   
   const { toast } = useToast();
+  const { revendedores } = useRevendedores();
+  const { estoque, loading, marcarComoVendido, buscarPorCodigo, getEstatisticas } = useEstoque(currentRevendedor || undefined);
 
-  const resellerInfo = {
-    name: "Maria Silva",
-    email: "maria.silva@email.com",
-    totalItems: 156,
-    availableItems: 98,
-    soldItems: 58,
-    totalValue: "R$ 18.450",
-    thisMonthSales: "R$ 3.240"
+  // Simular login do primeiro revendedor (Maria Silva) - será substituído por autenticação real
+  useEffect(() => {
+    if (revendedores.length > 0 && !currentRevendedor) {
+      const maria = revendedores.find(r => r.email === 'maria.silva@email.com');
+      if (maria) {
+        setCurrentRevendedor(maria.id);
+      }
+    }
+  }, [revendedores, currentRevendedor]);
+
+  const resellerInfo = currentRevendedor ? (() => {
+    const revendedor = revendedores.find(r => r.id === currentRevendedor);
+    const stats = getEstatisticas();
+    return {
+      name: revendedor?.nome || "Carregando...",
+      email: revendedor?.email || "",
+      totalItems: stats.total,
+      availableItems: stats.disponiveis,
+      soldItems: stats.vendidos,
+      totalValue: `R$ ${stats.valorTotalCompra.toFixed(2).replace('.', ',')}`,
+      thisMonthSales: `R$ ${stats.valorTotalVenda.toFixed(2).replace('.', ',')}`
+    };
+  })() : {
+    name: "Carregando...",
+    email: "",
+    totalItems: 0,
+    availableItems: 0,
+    soldItems: 0,
+    totalValue: "R$ 0,00",
+    thisMonthSales: "R$ 0,00"
   };
 
-  const [inventory, setInventory] = useState([
-    {
-      id: "BL001",
-      name: "Blusa Feminina Floral",
-      category: "Blusas",
-      size: "M",
-      color: "Azul",
-      price: "R$ 89,90",
-      purchaseDate: "2024-07-15",
-      status: "Disponível",
-      image: "/placeholder.svg"
-    },
-    {
-      id: "CA002",
-      name: "Calça Jeans Skinny", 
-      category: "Calças",
-      size: "38",
-      color: "Azul Escuro",
-      price: "R$ 159,90",
-      purchaseDate: "2024-07-15",
-      status: "Vendida",
-      soldDate: "2024-08-02",
-      image: "/placeholder.svg"
-    },
-    {
-      id: "VE003",
-      name: "Vestido Longo Estampado",
-      category: "Vestidos", 
-      size: "P",
-      color: "Vermelho",
-      price: "R$ 199,90",
-      purchaseDate: "2024-07-20",
-      status: "Disponível",
-      image: "/placeholder.svg"
-    },
-    {
-      id: "BL004",
-      name: "Blazer Social",
-      category: "Blazers",
-      size: "G", 
-      color: "Preto",
-      price: "R$ 249,90",
-      purchaseDate: "2024-07-20",
-      status: "Vendida",
-      soldDate: "2024-07-28",
-      image: "/placeholder.svg"
-    }
-  ]);
-
-  const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredInventory = estoque.filter(item => {
+    const nome = item.produto?.nome || '';
+    const codigo = item.codigo_peca;
+    const matchesSearch = nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         codigo.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || 
-                         (statusFilter === "available" && item.status === "Disponível") ||
-                         (statusFilter === "sold" && item.status === "Vendida");
+                         (statusFilter === "available" && item.status === "disponivel") ||
+                         (statusFilter === "sold" && item.status === "vendido");
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Disponível': return 'bg-success/10 text-success border-success/20';
-      case 'Vendida': return 'bg-primary/10 text-primary border-primary/20';
+      case 'disponivel': return 'bg-success/10 text-success border-success/20';
+      case 'vendido': return 'bg-primary/10 text-primary border-primary/20';
       default: return 'bg-muted/10 text-muted-foreground border-muted/20';
     }
   };
 
-  const handleViewItem = (item: typeof inventory[number]) => {
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'disponivel': return 'Disponível';
+      case 'vendido': return 'Vendido';
+      case 'reservado': return 'Reservado';
+      default: return status;
+    }
+  };
+
+  const handleViewItem = (item: typeof estoque[number]) => {
     toast({
-      title: `Peça ${item.id}`,
-      description: `${item.name} • ${item.price} • ${item.status}`
+      title: `Peça ${item.codigo_peca}`,
+      description: `${item.produto?.nome} • R$ ${item.preco_compra.toFixed(2).replace('.', ',')} • ${getStatusLabel(item.status)}`
     });
   };
 
-  const handleMarkSold = (id: string) => {
-    setInventory(prev => prev.map(i =>
-      i.id === id && i.status === "Disponível"
-        ? { ...i, status: "Vendida", soldDate: new Date().toISOString().split('T')[0] }
-        : i
-    ));
-    toast({ title: "Baixa realizada", description: "Peça marcada como vendida." });
+  const handleMarkSold = async (id: string) => {
+    try {
+      const item = estoque.find(i => i.id === id);
+      if (!item || item.status !== "disponivel") return;
+      
+      // Por simplicidade, usar o preço de compra como preço de venda
+      // Em produção, seria solicitado ao usuário
+      await marcarComoVendido(id, item.preco_compra);
+    } catch (error) {
+      // Erro já tratado no hook
+    }
   };
 
-  const handleScanSuccess = (code: string) => {
-    const item = inventory.find(i => i.id.toLowerCase() === code.toLowerCase());
-    if (!item) {
+  const handleScanSuccess = async (code: string) => {
+    try {
+      const item = await buscarPorCodigo(code);
+      if (!item) {
+        toast({
+          title: "Código não encontrado",
+          description: "Nenhuma peça encontrada com este código",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (item.status === "vendido") {
+        toast({
+          title: "Peça já vendida",
+          description: "Esta peça já foi marcada como vendida",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await handleMarkSold(item.id);
       toast({
-        title: "Código não encontrado",
-        description: "Nenhuma peça encontrada com este código",
+        title: "Baixa realizada com sucesso!",
+        description: `${item.produto?.nome} foi marcada como vendida`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível processar o código",
         variant: "destructive"
       });
-      return;
     }
-
-    if (item.status === "Vendida") {
-      toast({
-        title: "Peça já vendida",
-        description: "Esta peça já foi marcada como vendida",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    handleMarkSold(item.id);
-    toast({
-      title: "Baixa realizada com sucesso!",
-      description: `${item.name} foi marcada como vendida`
-    });
   };
 
-  const handleScannerSubmit = (e: React.FormEvent) => {
+  const handleScannerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scannerInput.trim()) {
       toast({
@@ -163,31 +165,39 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
       return;
     }
 
-    const item = inventory.find(i => i.id.toLowerCase() === scannerInput.toLowerCase().trim());
-    if (!item) {
+    try {
+      const item = await buscarPorCodigo(scannerInput.trim());
+      if (!item) {
+        toast({
+          title: "Código não encontrado",
+          description: "Nenhuma peça encontrada com este código",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (item.status === "vendido") {
+        toast({
+          title: "Peça já vendida",
+          description: "Esta peça já foi marcada como vendida",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await handleMarkSold(item.id);
+      setScannerInput("");
       toast({
-        title: "Código não encontrado",
-        description: "Nenhuma peça encontrada com este código",
+        title: "Baixa realizada com sucesso!",
+        description: `${item.produto?.nome} foi marcada como vendida`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível processar o código",
         variant: "destructive"
       });
-      return;
     }
-
-    if (item.status === "Vendida") {
-      toast({
-        title: "Peça já vendida",
-        description: "Esta peça já foi marcada como vendida",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    handleMarkSold(item.id);
-    setScannerInput("");
-    toast({
-      title: "Baixa realizada com sucesso!",
-      description: `${item.name} foi marcada como vendida`
-    });
   };
 
   const renderInventory = () => (
@@ -290,8 +300,8 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                   <div className="flex gap-4">
                     <div className="w-24 h-24 bg-accent/50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                       <img 
-                        src={item.image} 
-                        alt={item.name}
+                        src={item.produto?.imagem_url || "/placeholder.svg"} 
+                        alt={item.produto?.nome || "Produto"}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     </div>
@@ -300,19 +310,21 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="text-caption">
-                            {item.id}
+                            {item.codigo_peca}
                           </Badge>
-                          <h3 className="text-heading-3 truncate">{item.name}</h3>
+                          <h3 className="text-heading-3 truncate">{item.produto?.nome}</h3>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
-                          <span className="text-heading-3 text-primary">{item.price}</span>
+                          <span className="text-heading-3 text-primary">
+                            R$ {item.preco_compra.toFixed(2).replace('.', ',')}
+                          </span>
                           <Badge className={getStatusColor(item.status)}>
-                            {item.status === 'Disponível' ? (
+                            {item.status === 'disponivel' ? (
                               <CheckCircle className="h-3 w-3 mr-1" />
                             ) : (
                               <Clock className="h-3 w-3 mr-1" />
                             )}
-                            {item.status}
+                            {getStatusLabel(item.status)}
                           </Badge>
                         </div>
                       </div>
@@ -320,22 +332,26 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                       <div className="flex items-center gap-4 mb-3 text-body-small text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Tag className="h-3 w-3" />
-                          <span>{item.category}</span>
+                          <span>{item.produto?.categoria}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Ruler className="h-3 w-3" />
-                          <span>{item.size}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Palette className="h-3 w-3" />
-                          <span>{item.color}</span>
-                        </div>
+                        {item.produto?.tamanho && (
+                          <div className="flex items-center gap-1">
+                            <Ruler className="h-3 w-3" />
+                            <span>{item.produto.tamanho}</span>
+                          </div>
+                        )}
+                        {item.cor && (
+                          <div className="flex items-center gap-1">
+                            <Palette className="h-3 w-3" />
+                            <span>{item.cor}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="text-body-small text-muted-foreground mb-3">
-                        <span>Comprada: {new Date(item.purchaseDate).toLocaleDateString('pt-BR')}</span>
-                        {item.soldDate && (
-                          <span className="ml-4">Vendida: {new Date(item.soldDate).toLocaleDateString('pt-BR')}</span>
+                        <span>Comprada: {new Date(item.data_compra).toLocaleDateString('pt-BR')}</span>
+                        {item.data_venda && (
+                          <span className="ml-4">Vendida: {new Date(item.data_venda).toLocaleDateString('pt-BR')}</span>
                         )}
                       </div>
 
@@ -375,9 +391,22 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
       <Scanner
         onClose={() => {}} // Não precisa fechar pois está integrado
         onScanSuccess={handleScanSuccess}
-        inventory={inventory}
+        inventory={estoque.map(item => ({
+          id: item.codigo_peca,
+          name: item.produto?.nome || '',
+          price: `R$ ${item.preco_compra.toFixed(2).replace('.', ',')}`,
+          category: item.produto?.categoria || '',
+          status: item.status === 'disponivel' ? 'Disponível' : 'Vendida'
+        }))}
         mode="baixa"
-        recentSales={inventory.filter(i => i.status === "Vendida")}
+        recentSales={estoque.filter(i => i.status === "vendido").map(item => ({
+          id: item.codigo_peca,
+          name: item.produto?.nome || '',
+          price: `R$ ${item.preco_venda?.toFixed(2).replace('.', ',') || '0,00'}`,
+          category: item.produto?.categoria || '',
+          status: 'Vendida',
+          soldDate: item.data_venda || undefined
+        }))}
         integrated={true} // Nova prop para modo integrado
       />
     </div>
