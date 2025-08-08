@@ -8,11 +8,7 @@ interface Product {
   name: string;
   category: string;
   size: string;
-  color: string;
   price: string;
-  description: string;
-  stock: number;
-  status: string;
   image?: string;
 }
 
@@ -25,15 +21,6 @@ interface ProductDetailModalProps {
 
 export const ProductDetailModal = ({ isOpen, onClose, product, onEdit }: ProductDetailModalProps) => {
   if (!product) return null;
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Disponível': return 'bg-success/10 text-success border-success/20';
-      case 'Baixo Estoque': return 'bg-warning/10 text-warning border-warning/20';
-      case 'Esgotado': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -60,9 +47,6 @@ export const ProductDetailModal = ({ isOpen, onClose, product, onEdit }: Product
                     {product.id}
                   </Badge>
                 </div>
-                <Badge className={getStatusColor(product.status)}>
-                  {product.status}
-                </Badge>
               </div>
               
               <div className="text-2xl font-bold text-primary">{product.price}</div>
@@ -82,21 +66,9 @@ export const ProductDetailModal = ({ isOpen, onClose, product, onEdit }: Product
                 <span className="text-muted-foreground">Tamanho:</span>
                 <span>{product.size}</span>
               </div>
-              
-              <div className="flex items-center gap-2 text-body">
-                <Palette className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Cor:</span>
-                <span>{product.color}</span>
-              </div>
             </div>
             
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-body">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Estoque:</span>
-                <span>{product.stock} unidades</span>
-              </div>
-              
               <div className="flex items-center gap-2 text-body">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Código:</span>
@@ -104,13 +76,6 @@ export const ProductDetailModal = ({ isOpen, onClose, product, onEdit }: Product
               </div>
             </div>
           </div>
-
-          {product.description && (
-            <div>
-              <h4 className="text-heading-3 mb-2">Descrição</h4>
-              <p className="text-body text-muted-foreground">{product.description}</p>
-            </div>
-          )}
 
           <div className="flex gap-2 pt-4 border-t border-border">
             <Button 

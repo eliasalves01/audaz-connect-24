@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -12,11 +11,8 @@ interface Product {
   name: string;
   category: string;
   size: string;
-  color: string;
   price: string;
-  description: string;
-  stock: number;
-  status: string;
+  image?: string;
 }
 
 interface ProductModalProps {
@@ -34,15 +30,12 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
       name: '',
       category: '',
       size: '',
-      color: '',
       price: '',
-      description: '',
-      stock: 0,
-      status: 'Disponível'
+      image: ''
     }
   );
 
-  const categories = ["Blusas", "Calças", "Vestidos", "Blazers"];
+  const categories = ["short", "oversized", "longline"];
   const sizes = ["PP", "P", "M", "G", "GG"];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -74,6 +67,17 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
 
   const handleChange = (field: keyof Product, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -115,7 +119,7 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="size">Tamanho</Label>
               <Select value={formData.size} onValueChange={(value) => handleChange('size', value)}>
@@ -133,16 +137,6 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="color">Cor</Label>
-              <Input
-                id="color"
-                value={formData.color}
-                onChange={(e) => handleChange('color', e.target.value)}
-                placeholder="Ex: Azul"
-              />
-            </div>
-            
-            <div className="space-y-2">
               <Label htmlFor="price">Preço *</Label>
               <Input
                 id="price"
@@ -153,42 +147,24 @@ export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalP
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Estoque</Label>
-              <Input
-                id="stock"
-                type="number"
-                value={formData.stock}
-                onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Disponível">Disponível</SelectItem>
-                  <SelectItem value="Baixo Estoque">Baixo Estoque</SelectItem>
-                  <SelectItem value="Esgotado">Esgotado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Descrição do produto..."
-              rows={3}
+            <Label htmlFor="image">Imagem do Produto</Label>
+            <Input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="cursor-pointer"
             />
+            {formData.image && (
+              <div className="mt-2">
+                <img 
+                  src={formData.image} 
+                  alt="Preview" 
+                  className="w-20 h-20 object-cover rounded-md border"
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

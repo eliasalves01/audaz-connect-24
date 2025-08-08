@@ -24,12 +24,8 @@ interface Product {
   name: string;
   category: string;
   size: string;
-  color: string;
   price: string;
-  description: string;
-  image: string;
-  status: string;
-  stock: number;
+  image?: string;
 }
 
 export const ProductCatalog = () => {
@@ -44,56 +40,32 @@ export const ProductCatalog = () => {
 
   const [products, setProducts] = useState<Product[]>([
     {
-      id: "BL001",
-      name: "Blusa Feminina Floral",
-      category: "Blusas",
+      id: "SH001",
+      name: "Camiseta Short Básica",
+      category: "short",
       size: "M",
-      color: "Azul",
       price: "R$ 89,90",
-      description: "Blusa feminina estampada com flores",
-      image: "/placeholder.svg",
-      status: "Disponível",
-      stock: 25
+      image: "/placeholder.svg"
     },
     {
-      id: "CA002", 
-      name: "Calça Jeans Skinny",
-      category: "Calças",
-      size: "38",
-      color: "Azul Escuro",
-      price: "R$ 159,90",
-      description: "Calça jeans skinny com elastano",
-      image: "/placeholder.svg",
-      status: "Disponível",
-      stock: 18
-    },
-    {
-      id: "VE003",
-      name: "Vestido Longo Estampado",
-      category: "Vestidos",
-      size: "P",
-      color: "Vermelho",
-      price: "R$ 199,90",
-      description: "Vestido longo com estampa tropical",
-      image: "/placeholder.svg",
-      status: "Baixo Estoque",
-      stock: 3
-    },
-    {
-      id: "BL004",
-      name: "Blazer Social",
-      category: "Blazers",
+      id: "OV002", 
+      name: "Moletom Oversized",
+      category: "oversized",
       size: "G",
-      color: "Preto",
-      price: "R$ 249,90",
-      description: "Blazer social feminino",
-      image: "/placeholder.svg",
-      status: "Disponível",
-      stock: 12
+      price: "R$ 159,90",
+      image: "/placeholder.svg"
+    },
+    {
+      id: "LO003",
+      name: "Blusa Longline Listrada",
+      category: "longline",
+      size: "P",
+      price: "R$ 199,90",
+      image: "/placeholder.svg"
     }
   ]);
 
-  const categories = ["all", "Blusas", "Calças", "Vestidos", "Blazers"];
+  const categories = ["all", "short", "oversized", "longline"];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -144,14 +116,6 @@ export const ProductCatalog = () => {
     setSelectedProduct(null);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Disponível': return 'bg-success/10 text-success border-success/20';
-      case 'Baixo Estoque': return 'bg-warning/10 text-warning border-warning/20';
-      case 'Esgotado': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -218,9 +182,6 @@ export const ProductCatalog = () => {
                     <Badge variant="secondary" className="text-caption">
                       {product.id}
                     </Badge>
-                    <Badge className={getStatusColor(product.status)}>
-                      {product.status}
-                    </Badge>
                   </div>
                   
                   <h3 className="text-heading-3 mb-2 line-clamp-2">{product.name}</h3>
@@ -230,26 +191,14 @@ export const ProductCatalog = () => {
                       <Tag className="h-3 w-3" />
                       <span>{product.category}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-body-small text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Ruler className="h-3 w-3" />
-                        <span>{product.size}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Palette className="h-3 w-3" />
-                        <span>{product.color}</span>
-                      </div>
+                    <div className="flex items-center gap-1 text-body-small text-muted-foreground">
+                      <Ruler className="h-3 w-3" />
+                      <span>{product.size}</span>
                     </div>
-                    <p className="text-body-small text-muted-foreground line-clamp-2">
-                      {product.description}
-                    </p>
                   </div>
 
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-heading-3 text-primary">{product.price}</span>
-                    <span className="text-body-small text-muted-foreground">
-                      Estoque: {product.stock}
-                    </span>
                   </div>
 
                   <div className="flex gap-1">
