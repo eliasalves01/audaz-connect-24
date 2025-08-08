@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { 
   X, 
@@ -11,8 +11,30 @@ import {
   ShoppingCart,
   User,
   Package,
-  DollarSign
+  DollarSign,
+  Minus
 } from "lucide-react";
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  size: string;
+  price: string;
+}
+
+interface Reseller {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+}
+
+interface OrderItem {
+  productId: string;
+  quantity: number;
+}
 
 interface OrderModalProps {
   onClose: () => void;
@@ -22,38 +44,91 @@ interface OrderModalProps {
     items: number;
     value: string;
     date: string;
-    description?: string;
   }) => void;
 }
 
 export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
-  const [formData, setFormData] = useState({
-    reseller: "",
-    items: "",
-    value: "",
-    description: ""
-  });
+  const [selectedReseller, setSelectedReseller] = useState("");
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [totalValue, setTotalValue] = useState(0);
   const { toast } = useToast();
+
+  // Mock data - em produção viria de um contexto/API
+  const products: Product[] = [
+    {
+      id: "SH001",
+      name: "Camiseta Short Básica",
+      category: "short",
+      size: "M",
+      price: "R$ 89,90"
+    },
+    {
+      id: "OV002", 
+      name: "Moletom Oversized",
+      category: "oversized",
+      size: "G",
+      price: "R$ 159,90"
+    },
+    {
+      id: "LO003",
+      name: "Blusa Longline Listrada",
+      category: "longline",
+      size: "P",
+      price: "R$ 199,90"
+    }
+  ];
+
+  const resellers: Reseller[] = [
+    {
+      id: "R001",
+      name: "Maria Silva",
+      email: "maria@email.com",
+      phone: "(11) 99999-9999",
+      city: "São Paulo"
+    },
+    {
+      id: "R002",
+      name: "João Santos",
+      email: "joao@email.com", 
+      phone: "(11) 88888-8888",
+      city: "Rio de Janeiro"
+    }
+  ];
+
+  // Calcular valor total sempre que os itens mudarem
+  useEffect(() => {
+    const total = orderItems.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.productId);
+      if (product) {
+        const price = parseFloat(product.price.replace('R$ ', '').replace(',', '.'));
+        return sum + (price * item.quantity);
+      }
+      return sum;
+    }, 0);
+    setTotalValue(total);
+  }, [orderItems]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.reseller || !formData.items || !formData.value) {
+    if (!selectedReseller || orderItems.length === 0) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios",
+        description: "Selecione um revendedor e adicione pelo menos um produto",
         variant: "destructive"
       });
       return;
     }
 
+    const totalItems = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+    const selectedResellerData = resellers.find(r => r.id === selectedReseller);
+
     const newOrder = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      reseller: formData.reseller,
-      items: parseInt(formData.items),
-      value: formData.value.includes('R$') ? formData.value : `R$ ${formData.value}`,
-      date: new Date().toISOString().split('T')[0],
-      description: formData.description
+      reseller: selectedResellerData?.name || "",
+      items: totalItems,
+      value: `R$ ${totalValue.toFixed(2).replace('.', ',')}`,
+      date: new Date().toISOString().split('T')[0]
     };
 
     onSave(newOrder);
@@ -64,8 +139,39 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
     onClose();
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const addProduct = (productId: string) => {
+    setOrderItems(prev => {
+      const existingItem = prev.find(item => item.productId === productId);
+      if (existingItem) {
+        return prev.map(item => 
+          item.productId === productId 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prev, { productId, quantity: 1 }];
+      }
+    });
+  };
+
+  const removeProduct = (productId: string) => {
+    setOrderItems(prev => {
+      const existingItem = prev.find(item => item.productId === productId);
+      if (existingItem && existingItem.quantity > 1) {
+        return prev.map(item => 
+          item.productId === productId 
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        );
+      } else {
+        return prev.filter(item => item.productId !== productId);
+      }
+    });
+  };
+
+  const getProductQuantity = (productId: string) => {
+    const item = orderItems.find(item => item.productId === productId);
+    return item ? item.quantity : 0;
   };
 
   return (
@@ -94,73 +200,97 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Revendedor */}
             <div className="space-y-2">
-              <Label htmlFor="reseller" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Revendedor *
               </Label>
-              <Input
-                id="reseller"
-                type="text"
-                placeholder="Nome do revendedor"
-                value={formData.reseller}
-                onChange={(e) => handleChange('reseller', e.target.value)}
-                className="h-12"
-                required
-              />
+              <Select value={selectedReseller} onValueChange={setSelectedReseller}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione um revendedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resellers.map((reseller) => (
+                    <SelectItem key={reseller.id} value={reseller.id}>
+                      {reseller.name} - {reseller.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Quantidade de Itens */}
-            <div className="space-y-2">
-              <Label htmlFor="items" className="flex items-center gap-2">
+            {/* Produtos */}
+            <div className="space-y-4">
+              <Label className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Quantidade de Itens *
+                Produtos *
               </Label>
-              <Input
-                id="items"
-                type="number"
-                placeholder="Ex: 15"
-                value={formData.items}
-                onChange={(e) => handleChange('items', e.target.value)}
-                className="h-12"
-                min="1"
-                required
-              />
+              <div className="space-y-3">
+                {products.map((product) => {
+                  const quantity = getProductQuantity(product.id);
+                  return (
+                    <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{product.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {product.category} - {product.size} - {product.price}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {quantity > 0 && (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeProduct(product.id)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center">{quantity}</span>
+                          </>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addProduct(product.id)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Valor Total */}
-            <div className="space-y-2">
-              <Label htmlFor="value" className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Valor Total *
-              </Label>
-              <Input
-                id="value"
-                type="text"
-                placeholder="Ex: 2.340,00 ou R$ 2.340,00"
-                value={formData.value}
-                onChange={(e) => handleChange('value', e.target.value)}
-                className="h-12"
-                required
-              />
-            </div>
-
-            {/* Descrição (Opcional) */}
-            <div className="space-y-2">
-              <Label htmlFor="description">
-                Observações (Opcional)
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="Adicione observações sobre o pedido..."
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                rows={3}
-              />
-            </div>
+            {/* Resumo do Pedido */}
+            {orderItems.length > 0 && (
+              <div className="p-4 bg-accent/50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="h-4 w-4" />
+                  <Label>Resumo do Pedido</Label>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Total de itens:</span>
+                    <span>{orderItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span>Valor total:</span>
+                    <span>R$ {totalValue.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Buttons */}
             <div className="flex gap-3 pt-4">
-              <Button type="submit" className="button-gradient flex-1">
+              <Button 
+                type="submit" 
+                className="button-gradient flex-1"
+                disabled={!selectedReseller || orderItems.length === 0}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Criar Pedido
               </Button>
