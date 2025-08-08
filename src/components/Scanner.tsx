@@ -58,6 +58,17 @@ export const Scanner = ({
     };
   }, []);
 
+  // Auto-scan effect
+  useEffect(() => {
+    if (isCameraActive && !isManualMode) {
+      const interval = setInterval(() => {
+        handleAutoScan();
+      }, 3000); // Tenta escanear automaticamente a cada 3 segundos
+      
+      return () => clearInterval(interval);
+    }
+  }, [isCameraActive, isManualMode, inventory]);
+
   const startCamera = async () => {
     try {
       setError("");
@@ -132,11 +143,18 @@ export const Scanner = ({
     }
   };
 
-  const handleScanCapture = () => {
-    // Simula um scan bem-sucedido para demonstração
-    // Em produção, aqui seria integrado com uma biblioteca de QR/barcode
-    const simulatedCode = "BL001";
-    handleCodeScanned(simulatedCode);
+  const handleAutoScan = () => {
+    // Simula detecção automática de códigos
+    // Em produção, seria integrado com uma biblioteca de detecção de QR/barcode
+    const availableCodes = inventory
+      .filter(item => item.status === 'Disponível')
+      .map(item => item.id);
+    
+    if (availableCodes.length > 0) {
+      // Simula a detecção do primeiro código disponível
+      const detectedCode = availableCodes[0];
+      handleCodeScanned(detectedCode);
+    }
   };
 
   if (integrated) {
@@ -200,19 +218,14 @@ export const Scanner = ({
                 )}
               </div>
 
-              {/* Camera Controls */}
-              <div className="flex gap-2 justify-center">
-                <Button 
-                  className="button-gradient flex-1 max-w-xs" 
-                  onClick={handleScanCapture}
-                  disabled={!isCameraActive}
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Capturar Código
-                </Button>
+              {/* Scanner Info */}
+              <div className="text-center mt-4">
+                <p className="text-white text-sm font-medium mb-2">
+                  Scanner automático ativo
+                </p>
                 <Button variant="outline" onClick={() => setIsManualMode(true)}>
                   <Keyboard className="h-4 w-4 mr-2" />
-                  Manual
+                  Inserir Código Manualmente
                 </Button>
               </div>
             </div>
@@ -399,19 +412,14 @@ export const Scanner = ({
                   )}
                 </div>
 
-                {/* Camera Controls */}
-                <div className="flex gap-2 justify-center">
-                  <Button 
-                    className="button-gradient flex-1 max-w-xs" 
-                    onClick={handleScanCapture}
-                    disabled={!isCameraActive}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Capturar Código
-                  </Button>
+                {/* Scanner Info */}
+                <div className="text-center mt-4">
+                  <p className="text-muted-foreground text-sm font-medium mb-2">
+                    Scanner automático ativo
+                  </p>
                   <Button variant="outline" onClick={() => setIsManualMode(true)}>
                     <Keyboard className="h-4 w-4 mr-2" />
-                    Manual
+                    Inserir Código Manualmente
                   </Button>
                 </div>
               </div>
