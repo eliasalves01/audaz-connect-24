@@ -30,7 +30,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [scannerInput, setScannerInput] = useState("");
-  const [showScanner, setShowScanner] = useState(false);
+  
   const { toast } = useToast();
 
   const resellerInfo = {
@@ -146,7 +146,6 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
     }
 
     handleMarkSold(item.id);
-    setShowScanner(false);
     toast({
       title: "Baixa realizada com sucesso!",
       description: `${item.name} foi marcada como vendida`
@@ -362,84 +361,22 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
 
   const renderScanner = () => (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-heading-1">Dar Baixa</h1>
-          <p className="text-body text-muted-foreground">
-            Escaneie ou digite o código da peça para dar baixa
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button className="button-gradient" onClick={() => setShowScanner(true)}>
-            <ScanLine className="h-4 w-4 mr-2" />
-            Abrir Scanner
-          </Button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-heading-1 mb-2">Dar Baixa</h1>
+        <p className="text-body text-muted-foreground">
+          Escaneie ou digite o código da peça para dar baixa
+        </p>
       </div>
-
-      <div className="max-w-2xl mx-auto">
-        <Card className="card-elevated">
-          <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <div className="bg-primary/10 p-6 rounded-xl max-w-md mx-auto mb-6">
-                <ScanLine className="h-16 w-16 text-primary mx-auto mb-4" />
-                <h2 className="text-heading-2 mb-2">Scanner de Código</h2>
-                <p className="text-muted-foreground">
-                  Digite ou escaneie o código da etiqueta para dar baixa na peça vendida
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleScannerSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="scanner-input">Código da Peça</Label>
-                <div className="relative">
-                  <Input
-                    id="scanner-input"
-                    type="text"
-                    placeholder="Digite ou escaneie o código (ex: BL001)"
-                    value={scannerInput}
-                    onChange={(e) => setScannerInput(e.target.value)}
-                    className="h-14 text-lg text-center font-mono uppercase"
-                    autoFocus
-                  />
-                  <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <Button type="submit" className="button-gradient w-full h-12 text-lg">
-                <ScanLine className="h-5 w-5 mr-2" />
-                Dar Baixa
-              </Button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-border">
-              <h3 className="text-heading-3 mb-4">Últimas Baixas</h3>
-              <div className="space-y-2">
-                {inventory
-                  .filter(item => item.status === "Vendida")
-                  .slice(0, 3)
-                  .map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary">{item.id}</Badge>
-                        <span className="font-medium">{item.name}</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-body-small text-success">Vendida</p>
-                        {item.soldDate && (
-                          <p className="text-body-small text-muted-foreground">
-                            {new Date(item.soldDate).toLocaleDateString('pt-BR')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      
+      {/* Scanner integrado */}
+      <Scanner
+        onClose={() => {}} // Não precisa fechar pois está integrado
+        onScanSuccess={handleScanSuccess}
+        inventory={inventory}
+        mode="baixa"
+        recentSales={inventory.filter(i => i.status === "Vendida")}
+        integrated={true} // Nova prop para modo integrado
+      />
     </div>
   );
 
@@ -494,16 +431,6 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
         )}
       </main>
 
-      {/* Scanner Modal */}
-      {showScanner && (
-        <Scanner
-          onClose={() => setShowScanner(false)}
-          onScanSuccess={handleScanSuccess}
-          inventory={inventory}
-          mode="baixa"
-          recentSales={inventory.filter(i => i.status === "Vendida")}
-        />
-      )}
     </div>
   );
 };
