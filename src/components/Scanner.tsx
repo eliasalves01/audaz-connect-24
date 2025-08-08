@@ -33,13 +33,12 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isManualMode) {
-      startCamera();
-    }
+    // Sempre inicia com a câmera
+    startCamera();
     return () => {
       stopCamera();
     };
-  }, [isManualMode]);
+  }, []);
 
   const startCamera = async () => {
     try {
@@ -58,8 +57,12 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
       }
     } catch (err) {
       console.error("Erro ao acessar câmera:", err);
-      setError("Não foi possível acessar a câmera. Use o modo manual.");
-      setIsManualMode(true);
+      setError("Câmera não disponível. Tente o modo manual.");
+      toast({
+        title: "Câmera não disponível",
+        description: "Use o modo manual para inserir o código",
+        variant: "destructive"
+      });
     }
   };
 
@@ -119,7 +122,7 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
             {!isManualMode ? (
               <div className="space-y-4">
                 {/* Camera View */}
-                <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                <div className="relative aspect-video bg-black rounded-lg overflow-hidden border-2 border-primary/20">
                   <video
                     ref={videoRef}
                     autoPlay
@@ -127,20 +130,47 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
                     muted
                     className="w-full h-full object-cover"
                   />
-                  {isCameraActive && (
+                  {/* Scanner Overlay */}
+                  <div className="absolute inset-0 bg-black/40">
+                    {/* Scanner Frame */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="border-2 border-primary rounded-lg w-64 h-40 flex items-center justify-center">
-                        <div className="border border-primary/50 rounded w-56 h-32 flex items-center justify-center">
-                          <ScanLine className="h-8 w-8 text-primary animate-pulse" />
+                      <div className="relative">
+                        {/* Scanning Area */}
+                        <div className="w-80 h-48 border-2 border-primary rounded-lg bg-transparent">
+                          {/* Corner indicators */}
+                          <div className="absolute -top-1 -left-1 w-6 h-6 border-l-4 border-t-4 border-primary rounded-tl-lg"></div>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 border-r-4 border-t-4 border-primary rounded-tr-lg"></div>
+                          <div className="absolute -bottom-1 -left-1 w-6 h-6 border-l-4 border-b-4 border-primary rounded-bl-lg"></div>
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 border-r-4 border-b-4 border-primary rounded-br-lg"></div>
+                          
+                          {/* Scanning Line */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
+                          </div>
+                        </div>
+                        
+                        {/* Instructions */}
+                        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
+                          <p className="text-white text-sm font-medium mb-1">
+                            Posicione o código dentro da área
+                          </p>
+                          <div className="flex items-center justify-center gap-2 text-primary">
+                            <ScanLine className="h-4 w-4 animate-pulse" />
+                            <span className="text-xs">Escaneando...</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+
                   {error && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                      <div className="text-center text-white">
-                        <AlertCircle className="h-12 w-12 mx-auto mb-2 text-destructive" />
-                        <p>{error}</p>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                      <div className="text-center text-white p-6 rounded-lg bg-black/50">
+                        <AlertCircle className="h-12 w-12 mx-auto mb-3 text-destructive" />
+                        <p className="mb-4">{error}</p>
+                        <Button variant="outline" onClick={() => setIsManualMode(true)}>
+                          Usar Modo Manual
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -149,7 +179,7 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
                 {/* Camera Controls */}
                 <div className="flex gap-2 justify-center">
                   <Button 
-                    className="button-gradient" 
+                    className="button-gradient flex-1 max-w-xs" 
                     onClick={handleScanCapture}
                     disabled={!isCameraActive}
                   >
@@ -158,7 +188,7 @@ export const Scanner = ({ onClose, onScanSuccess, recentSales = [] }: ScannerPro
                   </Button>
                   <Button variant="outline" onClick={() => setIsManualMode(true)}>
                     <Keyboard className="h-4 w-4 mr-2" />
-                    Modo Manual
+                    Manual
                   </Button>
                 </div>
               </div>
