@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { Scanner } from "./Scanner";
 import { 
   Package, 
   TrendingUp, 
@@ -29,6 +30,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [scannerInput, setScannerInput] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
   const { toast } = useToast();
 
   const resellerInfo = {
@@ -117,10 +119,38 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const handleMarkSold = (id: string) => {
     setInventory(prev => prev.map(i =>
       i.id === id && i.status === "Disponível"
-        ? { ...i, status: "Vendida", soldDate: new Date().toISOString() }
+        ? { ...i, status: "Vendida", soldDate: new Date().toISOString().split('T')[0] }
         : i
     ));
     toast({ title: "Baixa realizada", description: "Peça marcada como vendida." });
+  };
+
+  const handleScanSuccess = (code: string) => {
+    const item = inventory.find(i => i.id.toLowerCase() === code.toLowerCase());
+    if (!item) {
+      toast({
+        title: "Código não encontrado",
+        description: "Nenhuma peça encontrada com este código",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (item.status === "Vendida") {
+      toast({
+        title: "Peça já vendida",
+        description: "Esta peça já foi marcada como vendida",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    handleMarkSold(item.id);
+    setShowScanner(false);
+    toast({
+      title: "Baixa realizada com sucesso!",
+      description: `${item.name} foi marcada como vendida`
+    });
   };
 
   const handleScannerSubmit = (e: React.FormEvent) => {
@@ -171,10 +201,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="button-gradient" onClick={() => toast({
-            title: "Dar Baixa",
-            description: "Use o botão Baixar na peça desejada."
-          })}>
+          <Button className="button-gradient" onClick={() => setShowScanner(true)}>
             <ScanLine className="h-4 w-4 mr-2" />
             Dar Baixa
           </Button>
@@ -322,7 +349,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                       Detalhes
                     </Button>
                     {item.status === 'Disponível' && (
-                      <Button size="sm" className="flex-1" onClick={() => handleMarkSold(item.id)}>
+                      <Button size="sm" className="flex-1" onClick={() => setShowScanner(true)}>
                         <ScanLine className="h-3 w-3 mr-1" />
                         Baixar
                       </Button>
@@ -470,6 +497,15 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           </div>
         )}
       </main>
+
+      {/* Scanner Modal */}
+      {showScanner && (
+        <Scanner
+          onClose={() => setShowScanner(false)}
+          onScanSuccess={handleScanSuccess}
+          recentSales={inventory.filter(i => i.status === "Vendida")}
+        />
+      )}
     </div>
   );
 };
