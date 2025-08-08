@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { 
   Package, 
@@ -27,6 +28,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const [activeTab, setActiveTab] = useState('inventory');
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [scannerInput, setScannerInput] = useState("");
   const { toast } = useToast();
 
   const resellerInfo = {
@@ -119,6 +121,44 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
         : i
     ));
     toast({ title: "Baixa realizada", description: "Peça marcada como vendida." });
+  };
+
+  const handleScannerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scannerInput.trim()) {
+      toast({
+        title: "Erro",
+        description: "Digite ou escaneie um código válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const item = inventory.find(i => i.id.toLowerCase() === scannerInput.toLowerCase().trim());
+    if (!item) {
+      toast({
+        title: "Código não encontrado",
+        description: "Nenhuma peça encontrada com este código",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (item.status === "Vendida") {
+      toast({
+        title: "Peça já vendida",
+        description: "Esta peça já foi marcada como vendida",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    handleMarkSold(item.id);
+    setScannerInput("");
+    toast({
+      title: "Baixa realizada com sucesso!",
+      description: `${item.name} foi marcada como vendida`
+    });
   };
 
   const renderInventory = () => (
@@ -282,7 +322,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                       Detalhes
                     </Button>
                     {item.status === 'Disponível' && (
-                      <Button size="sm" className="flex-1">
+                      <Button size="sm" className="flex-1" onClick={() => handleMarkSold(item.id)}>
                         <ScanLine className="h-3 w-3 mr-1" />
                         Baixar
                       </Button>
@@ -300,6 +340,83 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+
+  const renderScanner = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-heading-1">Dar Baixa</h1>
+          <p className="text-body text-muted-foreground">
+            Escaneie ou digite o código da peça para dar baixa
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        <Card className="card-elevated">
+          <CardContent className="p-8">
+            <div className="text-center mb-8">
+              <div className="bg-primary/10 p-6 rounded-xl max-w-md mx-auto mb-6">
+                <ScanLine className="h-16 w-16 text-primary mx-auto mb-4" />
+                <h2 className="text-heading-2 mb-2">Scanner de Código</h2>
+                <p className="text-muted-foreground">
+                  Digite ou escaneie o código da etiqueta para dar baixa na peça vendida
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleScannerSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="scanner-input">Código da Peça</Label>
+                <div className="relative">
+                  <Input
+                    id="scanner-input"
+                    type="text"
+                    placeholder="Digite ou escaneie o código (ex: BL001)"
+                    value={scannerInput}
+                    onChange={(e) => setScannerInput(e.target.value)}
+                    className="h-14 text-lg text-center font-mono uppercase"
+                    autoFocus
+                  />
+                  <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <Button type="submit" className="button-gradient w-full h-12 text-lg">
+                <ScanLine className="h-5 w-5 mr-2" />
+                Dar Baixa
+              </Button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-heading-3 mb-4">Últimas Baixas</h3>
+              <div className="space-y-2">
+                {inventory
+                  .filter(item => item.status === "Vendida")
+                  .slice(0, 3)
+                  .map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary">{item.id}</Badge>
+                        <span className="font-medium">{item.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-body-small text-success">Vendida</p>
+                        {item.soldDate && (
+                          <p className="text-body-small text-muted-foreground">
+                            {new Date(item.soldDate).toLocaleDateString('pt-BR')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 
@@ -345,20 +462,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'inventory' && renderInventory()}
-        {activeTab === 'scanner' && (
-          <div className="text-center py-12 space-y-4">
-            <div className="bg-primary/10 p-8 rounded-xl max-w-md mx-auto">
-              <ScanLine className="h-16 w-16 text-primary mx-auto mb-4" />
-              <h2 className="text-heading-2 mb-4">Scanner de Código</h2>
-              <p className="text-muted-foreground mb-6">
-                Escaneie ou digite o código da etiqueta para dar baixa na peça vendida
-              </p>
-              <Button className="button-gradient w-full">
-                Ativar Scanner
-              </Button>
-            </div>
-          </div>
-        )}
+        {activeTab === 'scanner' && renderScanner()}
         {activeTab === 'reports' && (
           <div className="text-center py-12">
             <h2 className="text-heading-2 mb-4">Relatórios</h2>
