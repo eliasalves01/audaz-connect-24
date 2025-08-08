@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Users, 
   Package, 
@@ -25,7 +26,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-
+  const { toast } = useToast();
   const dashboardStats = [
     {
       title: "Revendedores Ativos",
@@ -80,7 +81,9 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           <h1 className="text-heading-1">Dashboard Audaz</h1>
           <p className="text-body text-muted-foreground">Visão geral do sistema de gestão</p>
         </div>
-        <Button className="button-gradient">
+        <Button className="button-gradient" onClick={() =>
+          toast({ title: "Novo Pedido", description: "Fluxo de pedidos em breve." })
+        }>
           <Plus className="h-4 w-4 mr-2" />
           Novo Pedido
         </Button>
@@ -127,7 +130,14 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   </div>
                   <div className="text-right">
                     <p className="text-body-small text-muted-foreground">{order.date}</p>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => toast({
+                        title: `Pedido #${order.id}`,
+                        description: `${order.items} itens • ${order.value} • ${order.status}`
+                      })}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>

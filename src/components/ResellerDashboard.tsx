@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Package, 
   TrendingUp, 
@@ -26,6 +27,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const [activeTab, setActiveTab] = useState('inventory');
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
 
   const resellerInfo = {
     name: "Maria Silva",
@@ -37,7 +39,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
     thisMonthSales: "R$ 3.240"
   };
 
-  const inventory = [
+  const [inventory, setInventory] = useState([
     {
       id: "BL001",
       name: "Blusa Feminina Floral",
@@ -84,7 +86,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
       soldDate: "2024-07-28",
       image: "/placeholder.svg"
     }
-  ];
+  ]);
 
   const filteredInventory = inventory.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -103,6 +105,22 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
     }
   };
 
+  const handleViewItem = (item: typeof inventory[number]) => {
+    toast({
+      title: `Peça ${item.id}`,
+      description: `${item.name} • ${item.price} • ${item.status}`
+    });
+  };
+
+  const handleMarkSold = (id: string) => {
+    setInventory(prev => prev.map(i =>
+      i.id === id && i.status === "Disponível"
+        ? { ...i, status: "Vendida", soldDate: new Date().toISOString() }
+        : i
+    ));
+    toast({ title: "Baixa realizada", description: "Peça marcada como vendida." });
+  };
+
   const renderInventory = () => (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -113,7 +131,10 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="button-gradient">
+          <Button className="button-gradient" onClick={() => toast({
+            title: "Dar Baixa",
+            description: "Use o botão Baixar na peça desejada."
+          })}>
             <ScanLine className="h-4 w-4 mr-2" />
             Dar Baixa
           </Button>
@@ -256,7 +277,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
                   </div>
 
                   <div className="flex gap-1">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewItem(item)}>
                       <Eye className="h-3 w-3 mr-1" />
                       Detalhes
                     </Button>
