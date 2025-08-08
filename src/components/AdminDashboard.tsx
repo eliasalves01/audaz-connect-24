@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ProductCatalog } from "./ProductCatalog";
 import { ResellerManagement } from "./ResellerManagement";
+import { OrderModal } from "./modals/OrderModal";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -26,7 +27,15 @@ interface AdminDashboardProps {
 
 export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orders, setOrders] = useState([
+    { id: "001", reseller: "Maria Silva", items: 15, value: "R$ 2.340", date: "2024-08-07" },
+    { id: "002", reseller: "João Santos", items: 8, value: "R$ 1.120", date: "2024-08-06" },
+    { id: "003", reseller: "Ana Costa", items: 22, value: "R$ 3.560", date: "2024-08-06" },
+    { id: "004", reseller: "Carlos Lima", items: 12, value: "R$ 1.890", date: "2024-08-05" },
+  ]);
   const { toast } = useToast();
+  
   const dashboardStats = [
     {
       title: "Revendedores Ativos",
@@ -36,18 +45,11 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       color: "text-primary"
     },
     {
-      title: "Produtos Cadastrados",
+      title: "Produtos Cadastrados", 
       value: "1,247",
       description: "156 adicionados este mês",
       icon: Package,
       color: "text-success"
-    },
-    {
-      title: "Pedidos Pendentes",
-      value: "18",
-      description: "Para entregar",
-      icon: ShoppingCart,
-      color: "text-warning"
     },
     {
       title: "Vendas do Mês",
@@ -58,20 +60,8 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
   ];
 
-  const recentOrders = [
-    { id: "001", reseller: "Maria Silva", items: 15, value: "R$ 2.340", status: "Pendente", date: "2024-08-07" },
-    { id: "002", reseller: "João Santos", items: 8, value: "R$ 1.120", status: "Entregue", date: "2024-08-06" },
-    { id: "003", reseller: "Ana Costa", items: 22, value: "R$ 3.560", status: "Preparando", date: "2024-08-06" },
-    { id: "004", reseller: "Carlos Lima", items: 12, value: "R$ 1.890", status: "Entregue", date: "2024-08-05" },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pendente': return 'bg-warning/10 text-warning border-warning/20';
-      case 'Preparando': return 'bg-primary/10 text-primary border-primary/20';
-      case 'Entregue': return 'bg-success/10 text-success border-success/20';
-      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
-    }
+  const handleAddOrder = (newOrder: any) => {
+    setOrders(prev => [newOrder, ...prev]);
   };
 
   const renderDashboard = () => (
@@ -81,15 +71,13 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           <h1 className="text-heading-1">Dashboard Audaz</h1>
           <p className="text-body text-muted-foreground">Visão geral do sistema de gestão</p>
         </div>
-        <Button className="button-gradient" onClick={() =>
-          toast({ title: "Novo Pedido", description: "Fluxo de pedidos em breve." })
-        }>
+        <Button className="button-gradient" onClick={() => setShowOrderModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Pedido
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {dashboardStats.map((stat, index) => (
           <Card key={index} className="card-elevated">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -116,14 +104,11 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentOrders.map((order) => (
+              {orders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">#{order.id}</span>
-                      <Badge variant="secondary" className={getStatusColor(order.status)}>
-                        {order.status}
-                      </Badge>
                     </div>
                     <p className="text-body-small text-muted-foreground">{order.reseller}</p>
                     <p className="text-body-small">{order.items} itens • {order.value}</p>
@@ -135,7 +120,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                       size="sm"
                       onClick={() => toast({
                         title: `Pedido #${order.id}`,
-                        description: `${order.items} itens • ${order.value} • ${order.status}`
+                        description: `${order.items} itens • ${order.value}`
                       })}
                     >
                       <Eye className="h-4 w-4" />
@@ -233,6 +218,14 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </div>
         )}
       </main>
+
+      {/* Order Modal */}
+      {showOrderModal && (
+        <OrderModal
+          onClose={() => setShowOrderModal(false)}
+          onSave={handleAddOrder}
+        />
+      )}
     </div>
   );
 };
