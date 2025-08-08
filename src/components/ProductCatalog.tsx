@@ -167,66 +167,67 @@ export const ProductCatalog = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="space-y-4">
             {filteredProducts.map((product) => (
               <Card key={product.id} className="group hover:shadow-audaz-lg transition-all duration-200">
-                <div className="aspect-square bg-accent/50 rounded-t-lg flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                </div>
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className="text-caption">
-                      {product.id}
-                    </Badge>
-                  </div>
-                  
-                  <h3 className="text-heading-3 mb-2 line-clamp-2">{product.name}</h3>
-                  
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center gap-2 text-body-small text-muted-foreground">
-                      <Tag className="h-3 w-3" />
-                      <span>{product.category}</span>
+                  <div className="flex gap-4">
+                    <div className="w-24 h-24 bg-accent/50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
                     </div>
-                    <div className="flex items-center gap-1 text-body-small text-muted-foreground">
-                      <Ruler className="h-3 w-3" />
-                      <span>{product.size}</span>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-caption">
+                            {product.id}
+                          </Badge>
+                          <h3 className="text-heading-3 truncate">{product.name}</h3>
+                        </div>
+                        <span className="text-heading-3 text-primary ml-4">{product.price}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 mb-4 text-body-small text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Tag className="h-3 w-3" />
+                          <span>{product.category}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Ruler className="h-3 w-3" />
+                          <span>{product.size}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewProduct(product)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Ver
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteProduct(product)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-heading-3 text-primary">{product.price}</span>
-                  </div>
-
-                  <div className="flex gap-1">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleViewProduct(product)}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Ver
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleEditProduct(product)}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Editar
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDeleteProduct(product)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
