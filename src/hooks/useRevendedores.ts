@@ -69,11 +69,25 @@ export const useRevendedores = () => {
         const { senha, ...revendedorData } = revendedor;
         const { data, error } = await supabase
           .from('revendedores')
-          .insert({ ...revendedorData, user_id: authData.user?.id })
+          .insert(revendedorData)
           .select()
           .single();
 
         if (error) throw error;
+
+        // Criar ou atualizar perfil
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: authData.user!.id,
+            role: 'revendedor',
+            revendedor_id: data.id
+          });
+
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError);
+          // Não falhar a operação por isso
+        }
         
         setRevendedores(prev => [...prev, data].sort((a, b) => a.nome.localeCompare(b.nome)));
         toast({

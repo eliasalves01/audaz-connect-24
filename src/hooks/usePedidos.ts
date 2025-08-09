@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useCodeGenerator } from './useCodeGenerator';
 
 export interface NovoPedidoItem {
   produto_id: string;
@@ -19,15 +20,10 @@ export interface PedidoCriado {
   status: string;
 }
 
-const gerarNumeroPedido = () => `PED-${Date.now()}`;
-const gerarCodigoPeca = (codigoBase: string, index: number) => {
-  const suffix = String(Date.now()).slice(-6);
-  return `${codigoBase}-${suffix}-${index + 1}`.toUpperCase();
-};
-
 export const usePedidos = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { gerarNumeroPedido, gerarCodigoPeca } = useCodeGenerator();
 
   const criarPedido = async (
     revendedor_id: string,
@@ -64,10 +60,10 @@ export const usePedidos = () => {
       // 2) Gerar itens no estoque do revendedor (um registro por peça)
       const hoje = data_pedido;
       const estoqueRecords = itens.flatMap((item) => {
-        return Array.from({ length: item.quantidade }).map((_, idx) => ({
+        return Array.from({ length: item.quantidade }).map(() => ({
           revendedor_id,
           produto_id: item.produto_id,
-          codigo_peca: gerarCodigoPeca(item.codigo, idx),
+          codigo_peca: gerarCodigoPeca(item.codigo),
           data_compra: hoje,
           preco_compra: item.preco_unitario,
           status: 'disponivel' as const,

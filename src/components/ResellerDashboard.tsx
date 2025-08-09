@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Scanner } from "./Scanner";
 import { useEstoque } from "@/hooks/useEstoque";
-import { useRevendedores } from "@/hooks/useRevendedores";
 import { usePedidosRevendedor } from "@/hooks/usePedidosRevendedor";
 import { 
   Package, 
@@ -36,44 +36,52 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [scannerInput, setScannerInput] = useState("");
-  const [currentRevendedor, setCurrentRevendedor] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { revendedores } = useRevendedores();
-  const { estoque, loading, marcarComoVendido, buscarPorCodigo, getEstatisticas } = useEstoque(currentRevendedor || undefined);
-  const { pedidos, loading: loadingPedidos } = usePedidosRevendedor(currentRevendedor || undefined);
+  const { profile, loading: authLoading } = useAuth();
+  
+  // Derivar revendedorId do profile autenticado
+  const revendedorId = profile?.revendedor_id;
+  
+  const { estoque, loading, marcarComoVendido, buscarPorCodigo, getEstatisticas } = useEstoque(revendedorId || undefined);
+  const { pedidos, loading: loadingPedidos } = usePedidosRevendedor(revendedorId || undefined);
 
-  // Simular login do primeiro revendedor (Maria Silva) - será substituído por autenticação real
-  useEffect(() => {
-    if (revendedores.length > 0 && !currentRevendedor) {
-      const maria = revendedores.find(r => r.email === 'maria.silva@email.com');
-      if (maria) {
-        setCurrentRevendedor(maria.id);
-      }
-    }
-  }, [revendedores, currentRevendedor]);
+  // Verificar se o usuário tem perfil de revendedor válido
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Carregando perfil...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const resellerInfo = currentRevendedor ? (() => {
-    const revendedor = revendedores.find(r => r.id === currentRevendedor);
+  if (!profile || profile.role !== 'revendedor' || !revendedorId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-lg text-destructive mb-4">Acesso não autorizado</p>
+          <p className="text-muted-foreground mb-6">Você não possui um perfil de revendedor válido.</p>
+          <Button onClick={onLogout}>Voltar ao Login</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const resellerInfo = (() => {
     const stats = getEstatisticas();
     return {
-      name: revendedor?.nome || "Carregando...",
-      email: revendedor?.email || "",
+      name: "Revendedor",
+      email: "",
       totalItems: stats.total,
       availableItems: stats.disponiveis,
       soldItems: stats.vendidos,
       totalValue: `R$ ${stats.valorTotalCompra.toFixed(2).replace('.', ',')}`,
       thisMonthSales: `R$ ${stats.valorTotalVenda.toFixed(2).replace('.', ',')}`
     };
-  })() : {
-    name: "Carregando...",
-    email: "",
-    totalItems: 0,
-    availableItems: 0,
-    soldItems: 0,
-    totalValue: "R$ 0,00",
-    thisMonthSales: "R$ 0,00"
-  };
+  })();
 
   const filteredInventory = estoque.filter(item => {
     const nome = item.produto?.nome || '';
