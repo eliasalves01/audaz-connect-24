@@ -57,12 +57,13 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
   ];
 
-  const handleAddOrder = (newOrder: any) => {
-    toast({
-      title: "Pedido adicionado",
-      description: "Funcionalidade em desenvolvimento"
-    });
-  };
+const handleAddOrder = (newOrder: any) => {
+  toast({
+    title: "Pedido criado com sucesso",
+    description: `#${newOrder.id} • ${newOrder.items} itens • ${newOrder.value}`
+  });
+  setShowOrderModal(false);
+};
 
   const renderDashboard = () => (
     <div className="space-y-6">

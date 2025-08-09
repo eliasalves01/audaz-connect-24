@@ -14,6 +14,9 @@ import {
   DollarSign,
   Minus
 } from "lucide-react";
+import { useProdutos } from "@/hooks/useProdutos";
+import { useRevendedores } from "@/hooks/useRevendedores";
+import { usePedidos } from "@/hooks/usePedidos";
 
 interface Product {
   id: string;
@@ -53,7 +56,10 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
   const [totalValue, setTotalValue] = useState(0);
   const { toast } = useToast();
 
-  // Mock data - em produção viria de um contexto/API
+  const { produtos } = useProdutos();
+  const { revendedores } = useRevendedores();
+  const { criarPedido, loading: criandoPedido } = usePedidos();
+  
   const products: Product[] = [
     {
       id: "SH001",
@@ -78,66 +84,63 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
     }
   ];
 
-  const resellers: Reseller[] = [
-    {
-      id: "R001",
-      name: "Maria Silva",
-      email: "maria@email.com",
-      phone: "(11) 99999-9999",
-      city: "São Paulo"
-    },
-    {
-      id: "R002",
-      name: "João Santos",
-      email: "joao@email.com", 
-      phone: "(11) 88888-8888",
-      city: "Rio de Janeiro"
+// Os dados virão dos hooks - remover mocks
+
+
+// Calcular valor total sempre que os itens mudarem (usando dados reais)
+useEffect(() => {
+  const total = orderItems.reduce((sum, item) => {
+    const product = produtos.find(p => p.id === item.productId);
+    if (product) {
+      return sum + (product.preco * item.quantity);
     }
-  ];
+    return sum;
+  }, 0);
+  setTotalValue(total);
+}, [orderItems, produtos]);
 
-  // Calcular valor total sempre que os itens mudarem
-  useEffect(() => {
-    const total = orderItems.reduce((sum, item) => {
-      const product = products.find(p => p.id === item.productId);
-      if (product) {
-        const price = parseFloat(product.price.replace('R$ ', '').replace(',', '.'));
-        return sum + (price * item.quantity);
-      }
-      return sum;
-    }, 0);
-    setTotalValue(total);
-  }, [orderItems]);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!selectedReseller || orderItems.length === 0) {
+    toast({
+      title: "Campos obrigatórios",
+      description: "Selecione um revendedor e adicione pelo menos um produto",
+      variant: "destructive"
+    });
+    return;
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedReseller || orderItems.length === 0) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Selecione um revendedor e adicione pelo menos um produto",
-        variant: "destructive"
-      });
-      return;
-    }
+  try {
+    const itens = orderItems.map((item) => {
+      const product = produtos.find(p => p.id === item.productId);
+      if (!product) throw new Error('Produto inválido');
+      return {
+        produto_id: product.id,
+        codigo: product.codigo,
+        quantidade: item.quantity,
+        preco_unitario: product.preco,
+      };
+    });
 
-    const totalItems = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-    const selectedResellerData = resellers.find(r => r.id === selectedReseller);
+    const pedido = await criarPedido(selectedReseller, itens);
 
-    const newOrder = {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      reseller: selectedResellerData?.name || "",
+    const totalItems = orderItems.reduce((sum, i) => sum + i.quantity, 0);
+    const selectedResellerData = revendedores.find(r => r.id === selectedReseller);
+
+    onSave({
+      id: pedido.id,
+      reseller: selectedResellerData?.nome || "",
       items: totalItems,
       value: `R$ ${totalValue.toFixed(2).replace('.', ',')}`,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    onSave(newOrder);
-    toast({
-      title: "Pedido criado!",
-      description: `Pedido #${newOrder.id} foi criado com sucesso`
+      date: pedido.data_pedido,
     });
+
     onClose();
-  };
+  } catch (error) {
+    // Erro já tosteado no hook
+  }
+};
 
   const addProduct = (productId: string) => {
     setOrderItems(prev => {
@@ -208,13 +211,13 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Selecione um revendedor" />
                 </SelectTrigger>
-                <SelectContent>
-                  {resellers.map((reseller) => (
-                    <SelectItem key={reseller.id} value={reseller.id}>
-                      {reseller.name} - {reseller.city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+<SelectContent>
+  {revendedores.map((r) => (
+    <SelectItem key={r.id} value={r.id}>
+      {r.nome} - {r.email}
+    </SelectItem>
+  ))}
+</SelectContent>
               </Select>
             </div>
 
@@ -225,42 +228,42 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
                 Produtos *
               </Label>
               <div className="space-y-3">
-                {products.map((product) => {
-                  const quantity = getProductQuantity(product.id);
-                  return (
-                    <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{product.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {product.category} - {product.size} - {product.price}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {quantity > 0 && (
-                          <>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeProduct(product.id)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center">{quantity}</span>
-                          </>
-                        )}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addProduct(product.id)}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+{produtos.map((product) => {
+  const quantity = getProductQuantity(product.id);
+  return (
+    <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
+      <div className="flex-1">
+        <h4 className="font-medium">{product.nome}</h4>
+        <p className="text-sm text-muted-foreground">
+          {product.categoria}{product.tamanho ? ` • ${product.tamanho}` : ''} • R$ {product.preco.toFixed(2).replace('.', ',')}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        {quantity > 0 && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => removeProduct(product.id)}
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            <span className="w-8 text-center">{quantity}</span>
+          </>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => addProduct(product.id)}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+})}
               </div>
             </div>
 
@@ -286,14 +289,14 @@ export const OrderModal = ({ onClose, onSave }: OrderModalProps) => {
 
             {/* Buttons */}
             <div className="flex gap-3 pt-4">
-              <Button 
-                type="submit" 
-                className="button-gradient flex-1"
-                disabled={!selectedReseller || orderItems.length === 0}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Pedido
-              </Button>
+<Button 
+  type="submit" 
+  className="button-gradient flex-1"
+  disabled={!selectedReseller || orderItems.length === 0 || criandoPedido}
+>
+  <Plus className="h-4 w-4 mr-2" />
+  {criandoPedido ? 'Criando...' : 'Criar Pedido'}
+</Button>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
