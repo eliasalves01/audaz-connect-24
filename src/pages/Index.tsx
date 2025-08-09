@@ -1,32 +1,28 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
+import { Login } from "@/components/Login";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { ResellerDashboard } from "@/components/ResellerDashboard";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { profile, loading, signOut } = useAuth();
+  const [user, setUser] = useState<{ type: 'admin' | 'reseller' } | null>(null);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="text-muted-foreground">Carregando...</span>
-        </div>
-      </div>
-    );
+  const handleLogin = (userType: 'admin' | 'reseller') => {
+    setUser({ type: userType });
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
   }
 
-  return (
-    <ProtectedRoute>
-      {profile?.role === 'admin' ? (
-        <AdminDashboard onLogout={signOut} />
-      ) : (
-        <ResellerDashboard onLogout={signOut} />
-      )}
-    </ProtectedRoute>
-  );
+  if (user.type === 'admin') {
+    return <AdminDashboard onLogout={handleLogout} />;
+  }
+
+  return <ResellerDashboard onLogout={handleLogout} />;
 };
 
 export default Index;

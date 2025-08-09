@@ -1,72 +1,50 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-// Local types for Produto to avoid external type dependency
-export type Produto = {
+
+export interface Produto {
   id: string;
-  nome: string;
   codigo: string;
-  categoria: string;
-  tamanho?: string | null;
-  preco: number;
-  imagem_url?: string | null;
-  ativo?: boolean;
-  created_at?: string;
-  updated_at?: string;
-};
-
-export type ProdutoInsert = {
   nome: string;
-  codigo: string;
   categoria: string;
-  tamanho?: string | null;
+  tamanho?: string;
   preco: number;
-  imagem_url?: string | null;
-  ativo?: boolean;
-};
-
-export type ProdutoUpdate = Partial<ProdutoInsert>;
+  imagem_url?: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useProdutos = () => {
-  const queryClient = useQueryClient();
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchProdutos = async (): Promise<Produto[]> => {
-    const { data, error } = await supabase
-      .from('produtos')
-      .select('*')
-      .eq('ativo', true)
-      .order('created_at', { ascending: false });
+  const fetchProdutos = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('ativo', true)
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+      if (error) throw error;
+      setProdutos(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar produtos:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os produtos",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const { data: produtos = [], isLoading: loading, error } = useQuery({
-    queryKey: ['produtos'],
-    queryFn: fetchProdutos,
-  });
-
-  // Subscribe to realtime changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('produtos-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'produtos' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['produtos'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
-  const adicionarProdutoMutation = useMutation({
-    mutationFn: async (produto: ProdutoInsert) => {
+  const adicionarProduto = async (produto: Omit<Produto, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
       const { data, error } = await supabase
         .from('produtos')
         .insert(produto)
@@ -74,27 +52,26 @@ export const useProdutos = () => {
         .single();
 
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      
+      setProdutos(prev => [data, ...prev]);
       toast({
         title: "Sucesso",
         description: "Produto adicionado com sucesso!"
       });
-    },
-    onError: (error: any) => {
+      return data;
+    } catch (error) {
       console.error('Erro ao adicionar produto:', error);
       toast({
         title: "Erro",
         description: "Não foi possível adicionar o produto",
         variant: "destructive"
       });
+      throw error;
     }
-  });
+  };
 
-  const atualizarProdutoMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: ProdutoUpdate }) => {
+  const atualizarProduto = async (id: string, updates: Partial<Produto>) => {
+    try {
       const { data, error } = await supabase
         .from('produtos')
         .update(updates)
@@ -103,87 +80,59 @@ export const useProdutos = () => {
         .single();
 
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      
+      setProdutos(prev => prev.map(p => p.id === id ? data : p));
       toast({
         title: "Sucesso",
         description: "Produto atualizado com sucesso!"
       });
-    },
-    onError: (error: any) => {
+      return data;
+    } catch (error) {
       console.error('Erro ao atualizar produto:', error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o produto",
         variant: "destructive"
       });
+      throw error;
     }
-  });
+  };
 
-  const removerProdutoMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const removerProduto = async (id: string) => {
+    try {
       const { error } = await supabase
         .from('produtos')
         .update({ ativo: false })
         .eq('id', id);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      
+      setProdutos(prev => prev.filter(p => p.id !== id));
       toast({
         title: "Sucesso",
         description: "Produto removido com sucesso!"
       });
-    },
-    onError: (error: any) => {
+    } catch (error) {
       console.error('Erro ao remover produto:', error);
       toast({
         title: "Erro",
         description: "Não foi possível remover o produto",
         variant: "destructive"
       });
+      throw error;
     }
-  });
-
-  const uploadImage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `images/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('produtos')
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('produtos')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
   };
 
-  if (error) {
-    toast({
-      title: "Erro",
-      description: "Não foi possível carregar os produtos",
-      variant: "destructive"
-    });
-  }
+  useEffect(() => {
+    fetchProdutos();
+  }, []);
 
   return {
     produtos,
     loading,
-    adicionarProduto: adicionarProdutoMutation.mutateAsync,
-    atualizarProduto: (id: string, updates: ProdutoUpdate) => 
-      atualizarProdutoMutation.mutateAsync({ id, updates }),
-    removerProduto: removerProdutoMutation.mutateAsync,
-    uploadImage,
-    isAdding: adicionarProdutoMutation.isPending,
-    isUpdating: atualizarProdutoMutation.isPending,
-    isRemoving: removerProdutoMutation.isPending
+    adicionarProduto,
+    atualizarProduto,
+    removerProduto,
+    refetch: fetchProdutos
   };
 };

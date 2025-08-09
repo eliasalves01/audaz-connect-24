@@ -1,155 +1,183 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-
-// Local minimal type to avoid dependency on external types
-// Matches the fields used across the app
-type ProdutoLike = {
-  id: string;
-  nome: string;
-  codigo: string;
-  categoria: string;
-  tamanho?: string | null;
-  preco: number;
-  imagem_url?: string | null;
-  ativo?: boolean;
-};
+import { useToast } from "@/components/ui/use-toast";
+import { type Produto } from "@/hooks/useProdutos";
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: ProdutoLike | null;
-  onSave: (data: Partial<ProdutoLike>) => Promise<void> | void;
-  uploadImage?: (file: File) => Promise<string>;
-  isLoading?: boolean;
+  product?: Produto;
+  onSave: (product: Omit<Produto, 'id' | 'created_at' | 'updated_at'>) => void;
 }
 
-export const ProductModal = ({ isOpen, onClose, product, onSave, uploadImage, isLoading }: ProductModalProps) => {
-  const [form, setForm] = useState({
-    nome: product?.nome ?? "",
-    codigo: product?.codigo ?? "",
-    categoria: product?.categoria ?? "short",
-    tamanho: product?.tamanho ?? "",
-    preco: product?.preco != null ? String(product.preco).replace(".", ",") : "",
-    imagem_url: product?.imagem_url ?? "",
+export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalProps) => {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    codigo: product?.codigo || '',
+    nome: product?.nome || '',
+    categoria: product?.categoria || '',
+    tamanho: product?.tamanho || '',
+    preco: product?.preco || 0,
+    imagem_url: product?.imagem_url || '',
+    ativo: product?.ativo ?? true
   });
 
-  useEffect(() => {
-    setForm({
-      nome: product?.nome ?? "",
-      codigo: product?.codigo ?? "",
-      categoria: product?.categoria ?? "short",
-      tamanho: product?.tamanho ?? "",
-      preco: product?.preco != null ? String(product.preco).replace(".", ",") : "",
-      imagem_url: product?.imagem_url ?? "",
-    });
-  }, [product, isOpen]);
+  const categories = ["blusa", "short", "oversized", "longline", "vestido", "calça"];
+  const sizes = ["PP", "P", "M", "G", "GG"];
 
-  const handleChange = (field: keyof typeof form, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleImage = async (file: File | null) => {
-    if (!file) return;
-    if (!uploadImage) {
-      // Fallback: just preview locally if no uploader provided
-      const url = URL.createObjectURL(file);
-      setForm(prev => ({ ...prev, imagem_url: url }));
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.nome || !formData.categoria || !formData.preco) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
-    try {
-      const url = await uploadImage(file);
-      setForm(prev => ({ ...prev, imagem_url: url }));
-    } catch (e) {
-      console.error("Erro ao enviar imagem", e);
+
+    // Generate codigo if new product and no codigo provided
+    if (!formData.codigo) {
+      const prefix = formData.categoria.substring(0, 2).toUpperCase();
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      formData.codigo = `${prefix}${random}`;
     }
+
+    onSave(formData);
+    onClose();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Basic validation
-    if (!form.nome || !form.codigo || !form.preco) return;
-
-    const precoNumber = parseFloat(form.preco.replace(".", "").replace(",", "."));
-
-    const payload: Partial<ProdutoLike> = {
-      nome: form.nome,
-      codigo: form.codigo,
-      categoria: form.categoria,
-      tamanho: form.tamanho || null,
-      preco: isNaN(precoNumber) ? 0 : precoNumber,
-      imagem_url: form.imagem_url || null,
-      ativo: product?.ativo ?? true,
-    };
-
-    await onSave(payload);
-    onClose();
+  const handleChange = (field: string, value: string | number | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[640px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+          <DialogTitle>{product ? 'Editar Produto' : 'Adicionar Produto'}</DialogTitle>
           <DialogDescription>
-            {product ? "Atualize as informações do produto" : "Cadastre um novo produto no catálogo"}
+            {product ? 'Edite as informações do produto' : 'Adicione um novo produto ao catálogo'}
           </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome *</Label>
-              <Input id="nome" value={form.nome} onChange={(e) => handleChange("nome", e.target.value)} placeholder="Ex: Camiseta Audaz" />
+              <Label htmlFor="codigo">Código do Produto</Label>
+              <Input
+                id="codigo"
+                value={formData.codigo}
+                onChange={(e) => handleChange('codigo', e.target.value)}
+                placeholder="Ex: BL001 (deixe vazio para gerar automático)"
+              />
             </div>
-
+            
             <div className="space-y-2">
-              <Label htmlFor="codigo">Código *</Label>
-              <Input id="codigo" value={form.codigo} onChange={(e) => handleChange("codigo", e.target.value)} placeholder="Ex: AUD-001" />
+              <Label htmlFor="nome">Nome do Produto *</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => handleChange('nome', e.target.value)}
+                placeholder="Ex: Blusa Feminina Floral"
+              />
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoria</Label>
-              <Select value={form.categoria} onValueChange={(v) => handleChange("categoria", v)}>
+              <Label htmlFor="categoria">Categoria *</Label>
+              <Select value={formData.categoria} onValueChange={(value) => handleChange('categoria', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="short">short</SelectItem>
-                  <SelectItem value="oversized">oversized</SelectItem>
-                  <SelectItem value="longline">longline</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="tamanho">Tamanho</Label>
-              <Input id="tamanho" value={form.tamanho} onChange={(e) => handleChange("tamanho", e.target.value)} placeholder="Ex: M" />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="preco">Preço *</Label>
-              <Input id="preco" inputMode="decimal" value={form.preco} onChange={(e) => handleChange("preco", e.target.value)} placeholder="Ex: 49,90" />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="imagem">Imagem</Label>
-              <Input id="imagem" type="file" accept="image/*" onChange={(e) => handleImage(e.target.files?.[0] || null)} />
-              {form.imagem_url && (
-                <img src={form.imagem_url} alt={`Pré-visualização de ${form.nome}`} className="mt-2 h-24 w-24 object-cover rounded-md" loading="lazy" />
-              )}
+              <Select value={formData.tamanho || ''} onValueChange={(value) => handleChange('tamanho', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tamanho" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sizes.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="preco">Preço *</Label>
+              <Input
+                id="preco"
+                type="number"
+                step="0.01"
+                value={formData.preco}
+                onChange={(e) => handleChange('preco', parseFloat(e.target.value) || 0)}
+                placeholder="89.90"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="ativo">Status</Label>
+              <Select value={formData.ativo ? "true" : "false"} onValueChange={(value) => handleChange('ativo', value === "true")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="imagem_url">URL da Imagem</Label>
+            <Input
+              id="imagem_url"
+              value={formData.imagem_url || ''}
+              onChange={(e) => handleChange('imagem_url', e.target.value)}
+              placeholder="https://exemplo.com/imagem.jpg"
+            />
+            {formData.imagem_url && (
+              <div className="mt-2">
+                <img 
+                  src={formData.imagem_url} 
+                  alt="Preview" 
+                  className="w-20 h-20 object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={!!isLoading}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" className="button-gradient" disabled={!!isLoading}>
-              {product ? "Atualizar" : "Adicionar"}
+            <Button type="submit" className="button-gradient">
+              {product ? 'Atualizar' : 'Adicionar'}
             </Button>
           </DialogFooter>
         </form>

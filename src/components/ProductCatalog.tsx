@@ -7,8 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ProductModal } from "@/components/modals/ProductModal";
 import { ProductDetailModal } from "@/components/modals/ProductDetailModal";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
-import { useProdutos } from "@/hooks/useProdutos";
-import type { Produto } from "@/hooks/useProdutos";
+import { useProdutos, type Produto } from "@/hooks/useProdutos";
 import { 
   Plus, 
   Search, 
@@ -24,17 +23,7 @@ import {
 
 export const ProductCatalog = () => {
   const { toast } = useToast();
-  const { 
-    produtos, 
-    loading, 
-    adicionarProduto, 
-    atualizarProduto, 
-    removerProduto, 
-    uploadImage,
-    isAdding,
-    isUpdating,
-    isRemoving
-  } = useProdutos();
+  const { produtos, loading, adicionarProduto, atualizarProduto, removerProduto } = useProdutos();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -72,7 +61,7 @@ export const ProductCatalog = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSaveProduct = async (productData: any) => {
+  const handleSaveProduct = async (productData: Omit<Produto, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       if (editingProduct) {
         await atualizarProduto(editingProduct.id, productData);
@@ -241,8 +230,6 @@ export const ProductCatalog = () => {
         onClose={() => setIsProductModalOpen(false)}
         product={editingProduct}
         onSave={handleSaveProduct}
-        uploadImage={uploadImage}
-        isLoading={isAdding || isUpdating}
       />
 
       <ProductDetailModal
