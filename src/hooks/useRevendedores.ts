@@ -45,13 +45,14 @@ export const useRevendedores = () => {
     try {
       // Se tem senha, criar usuário no Auth
       if (revendedor.senha) {
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: revendedor.email,
           password: revendedor.senha,
-          email_confirm: true,
-          user_metadata: {
-            nome: revendedor.nome,
-            role: 'revendedor'
+          options: {
+            data: {
+              nome: revendedor.nome,
+              role: 'revendedor'
+            }
           }
         });
 
@@ -68,7 +69,7 @@ export const useRevendedores = () => {
         const { senha, ...revendedorData } = revendedor;
         const { data, error } = await supabase
           .from('revendedores')
-          .insert({ ...revendedorData, user_id: authData.user.id })
+          .insert({ ...revendedorData, user_id: authData.user?.id })
           .select()
           .single();
 
