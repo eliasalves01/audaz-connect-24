@@ -41,22 +41,62 @@ export const useRevendedores = () => {
     }
   };
 
-  const adicionarRevendedor = async (revendedor: Omit<Revendedor, 'id' | 'created_at' | 'updated_at'>) => {
+  const adicionarRevendedor = async (revendedor: Omit<Revendedor, 'id' | 'created_at' | 'updated_at'> & { senha?: string }) => {
     try {
-      const { data, error } = await supabase
-        .from('revendedores')
-        .insert(revendedor)
-        .select()
-        .single();
+      // Se tem senha, criar usuário no Auth
+      if (revendedor.senha) {
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: revendedor.email,
+          password: revendedor.senha,
+          email_confirm: true,
+          user_metadata: {
+            nome: revendedor.nome,
+            role: 'revendedor'
+          }
+        });
 
-      if (error) throw error;
-      
-      setRevendedores(prev => [...prev, data].sort((a, b) => a.nome.localeCompare(b.nome)));
-      toast({
-        title: "Sucesso",
-        description: "Revendedor adicionado com sucesso!"
-      });
-      return data;
+        if (authError) {
+          toast({
+            title: "Erro",
+            description: "Não foi possível criar o usuário de acesso",
+            variant: "destructive"
+          });
+          throw authError;
+        }
+
+        // Remover senha do objeto antes de inserir na tabela revendedores
+        const { senha, ...revendedorData } = revendedor;
+        const { data, error } = await supabase
+          .from('revendedores')
+          .insert({ ...revendedorData, user_id: authData.user.id })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        setRevendedores(prev => [...prev, data].sort((a, b) => a.nome.localeCompare(b.nome)));
+        toast({
+          title: "Sucesso",
+          description: "Revendedor e usuário criados com sucesso!"
+        });
+        return data;
+      } else {
+        // Apenas inserir revendedor sem criar usuário
+        const { data, error } = await supabase
+          .from('revendedores')
+          .insert(revendedor)
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        setRevendedores(prev => [...prev, data].sort((a, b) => a.nome.localeCompare(b.nome)));
+        toast({
+          title: "Sucesso",
+          description: "Revendedor adicionado com sucesso!"
+        });
+        return data;
+      }
     } catch (error) {
       console.error('Erro ao adicionar revendedor:', error);
       toast({

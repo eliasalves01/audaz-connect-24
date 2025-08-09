@@ -21,7 +21,8 @@ export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerMod
     email: reseller?.email || '',
     telefone: reseller?.telefone || '',
     endereco: reseller?.endereco || '',
-    ativo: reseller?.ativo ?? true
+    ativo: reseller?.ativo ?? true,
+    senha: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,6 +32,15 @@ export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerMod
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!reseller && !formData.senha) {
+      toast({
+        title: "Erro",
+        description: "Senha é obrigatória para novos revendedores",
         variant: "destructive"
       });
       return;
@@ -112,6 +122,23 @@ export const ResellerModal = ({ isOpen, onClose, reseller, onSave }: ResellerMod
               placeholder="Rua, Cidade, Estado"
             />
           </div>
+
+          {!reseller && (
+            <div className="space-y-2">
+              <Label htmlFor="senha">Senha de Acesso *</Label>
+              <Input
+                id="senha"
+                type="password"
+                value={formData.senha}
+                onChange={(e) => handleChange('senha', e.target.value)}
+                placeholder="Senha para acesso do revendedor"
+                minLength={6}
+              />
+              <p className="text-sm text-muted-foreground">
+                Esta senha será usada pelo revendedor para acessar o sistema
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

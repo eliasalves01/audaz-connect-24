@@ -97,131 +97,61 @@ const Auth = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-heading-2 text-center">Acesso ao Sistema</CardTitle>
             <CardDescription className="text-center">
-              Entre com suas credenciais ou crie uma nova conta
+              Entre com suas credenciais para acessar o sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={tab} onValueChange={(value) => navigate(`/auth?tab=${value}`)}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-              </TabsList>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-12"
+                />
+              </div>
 
-              <TabsContent value="login">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-12"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Digite sua senha"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-12 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 text-body-large button-gradient"
-                    disabled={loading || !email || !password}
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {loading ? "Entrando..." : "Entrar"}
-                  </Button>
-                </form>
-              </TabsContent>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-12"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Mínimo 6 caracteres"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="h-12 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirmar Senha</Label>
-                    <Input
-                      id="confirm-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Digite a senha novamente"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      className="h-12"
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 text-body-large button-gradient"
-                    disabled={loading || !email || !password || !confirmPassword}
-                  >
-                    {loading ? "Criando conta..." : "Criar Conta"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-body-large button-gradient"
+                disabled={loading || !email || !password}
+              >
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
