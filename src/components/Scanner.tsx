@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
   AlertCircle,
   CheckCircle
 } from "lucide-react";
+import { BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 
 interface ScannerProps {
   onClose: () => void;
@@ -47,27 +48,75 @@ export const Scanner = ({
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [error, setError] = useState("");
   const [scannedItem, setScannedItem] = useState<any>(null);
+  const [isScanning, setIsScanning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const { toast } = useToast();
 
+  // Inicializar o code reader
   useEffect(() => {
-    // Sempre inicia com a câmera
-    startCamera();
+    codeReaderRef.current = new BrowserMultiFormatReader();
     return () => {
-      stopCamera();
+      stopScanning();
     };
   }, []);
 
-  // Auto-scan effect
   useEffect(() => {
-    if (isCameraActive && !isManualMode) {
-      const interval = setInterval(() => {
-        handleAutoScan();
-      }, 3000); // Tenta escanear automaticamente a cada 3 segundos
-      
-      return () => clearInterval(interval);
+    if (!isManualMode) {
+      startScanning();
+    } else {
+      stopScanning();
     }
-  }, [isCameraActive, isManualMode, inventory]);
+    return () => {
+      stopScanning();
+    };
+  }, [isManualMode]);
+
+  const startScanning = useCallback(async () => {
+    if (!codeReaderRef.current || isScanning) return;
+    
+    try {
+      setError("");
+      setIsScanning(true);
+      
+      // Iniciar a câmera e o scanner
+      await codeReaderRef.current.decodeFromVideoDevice(undefined, videoRef.current!, (result, error) => {
+        if (result) {
+          const code = result.getText();
+          console.log('Código detectado:', code);
+          handleCodeScanned(code);
+          // Parar o scanner temporariamente após detectar um código
+          setTimeout(() => {
+            if (codeReaderRef.current && !isManualMode) {
+              startScanning();
+            }
+          }, 2000);
+        }
+        if (error && !(error.name === 'NotFoundException')) {
+          console.warn('Erro no scanner:', error);
+        }
+      });
+      
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error("Erro ao iniciar scanner:", err);
+      setError("Erro ao acessar câmera. Tente o modo manual.");
+      setIsScanning(false);
+      toast({
+        title: "Erro no scanner",
+        description: "Use o modo manual para inserir o código",
+        variant: "destructive"
+      });
+    }
+  }, [isScanning, isManualMode]);
+
+  const stopScanning = useCallback(() => {
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+    }
+    setIsScanning(false);
+    setIsCameraActive(false);
+  }, []);
 
   const startCamera = async () => {
     try {
@@ -143,19 +192,6 @@ export const Scanner = ({
     }
   };
 
-  const handleAutoScan = () => {
-    // Simula detecção automática de códigos
-    // Em produção, seria integrado com uma biblioteca de detecção de QR/barcode
-    const availableCodes = inventory
-      .filter(item => item.status === 'Disponível')
-      .map(item => item.id);
-    
-    if (availableCodes.length > 0) {
-      // Simula a detecção do primeiro código disponível
-      const detectedCode = availableCodes[0];
-      handleCodeScanned(detectedCode);
-    }
-  };
 
   if (integrated) {
     return (
