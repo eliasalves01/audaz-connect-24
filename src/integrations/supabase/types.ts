@@ -438,6 +438,10 @@ export type Database = {
         Args: { admin_email: string; admin_password: string }
         Returns: Json
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       canal_captacao:
