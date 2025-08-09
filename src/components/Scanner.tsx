@@ -56,66 +56,105 @@ export const Scanner = ({
   // Inicializar o code reader
   useEffect(() => {
     codeReaderRef.current = new BrowserMultiFormatReader();
+    
+    // Cleanup function
     return () => {
       stopScanning();
     };
   }, []);
 
   useEffect(() => {
-    if (!isManualMode) {
-      startScanning();
-    } else {
-      stopScanning();
-    }
+    // Usar timeout para evitar múltiplas chamadas
+    const timer = setTimeout(() => {
+      if (!isManualMode && !isScanning) {
+        startScanning();
+      } else if (isManualMode && isScanning) {
+        stopScanning();
+      }
+    }, 100);
+
     return () => {
-      stopScanning();
+      clearTimeout(timer);
     };
   }, [isManualMode]);
 
   const startScanning = useCallback(async () => {
-    if (!codeReaderRef.current || isScanning) return;
+    if (!codeReaderRef.current || isScanning || isManualMode) return;
     
     try {
       setError("");
       setIsScanning(true);
       
+      // Primeiro, garantir que qualquer stream anterior seja limpo
+      stopScanning();
+      
+      // Aguardar um pouco antes de tentar novamente
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('Iniciando scanner...');
+      
       // Iniciar a câmera e o scanner
-      await codeReaderRef.current.decodeFromVideoDevice(undefined, videoRef.current!, (result, error) => {
+      await codeReaderRef.current!.decodeFromVideoDevice(undefined, videoRef.current!, (result, error) => {
         if (result) {
           const code = result.getText();
           console.log('Código detectado:', code);
           handleCodeScanned(code);
-          // Parar o scanner temporariamente após detectar um código
+          
+          // Parar o scanner após detectar um código para evitar múltiplas leituras
+          stopScanning();
+          
+          // Reiniciar após um delay se ainda não estiver em modo manual
           setTimeout(() => {
-            if (codeReaderRef.current && !isManualMode) {
+            if (!isManualMode) {
               startScanning();
             }
           }, 2000);
         }
+        
+        // Ignorar erros de "not found" que são normais
         if (error && !(error.name === 'NotFoundException')) {
           console.warn('Erro no scanner:', error);
         }
       });
       
       setIsCameraActive(true);
-    } catch (err) {
+      console.log('Scanner iniciado com sucesso');
+      
+    } catch (err: any) {
       console.error("Erro ao iniciar scanner:", err);
-      setError("Erro ao acessar câmera. Tente o modo manual.");
+      setError("Erro ao acessar câmera. Use o modo manual.");
       setIsScanning(false);
+      setIsCameraActive(false);
       toast({
         title: "Erro no scanner",
         description: "Use o modo manual para inserir o código",
         variant: "destructive"
       });
     }
-  }, [isScanning, isManualMode]);
+  }, [isScanning, isManualMode, toast]);
 
   const stopScanning = useCallback(() => {
-    if (codeReaderRef.current) {
-      codeReaderRef.current.reset();
+    try {
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+      }
+      
+      // Limpar o stream de vídeo explicitamente
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log('Track parado:', track.kind);
+        });
+        videoRef.current.srcObject = null;
+      }
+      
+      setIsScanning(false);
+      setIsCameraActive(false);
+      console.log('Scanner parado');
+    } catch (err) {
+      console.error('Erro ao parar scanner:', err);
     }
-    setIsScanning(false);
-    setIsCameraActive(false);
   }, []);
 
   const startCamera = async () => {
