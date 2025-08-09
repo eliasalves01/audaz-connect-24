@@ -2,7 +2,31 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import type { Produto, ProdutoInsert, ProdutoUpdate } from '@/integrations/supabase/types';
+// Local types for Produto to avoid external type dependency
+export type Produto = {
+  id: string;
+  nome: string;
+  codigo: string;
+  categoria: string;
+  tamanho?: string | null;
+  preco: number;
+  imagem_url?: string | null;
+  ativo?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ProdutoInsert = {
+  nome: string;
+  codigo: string;
+  categoria: string;
+  tamanho?: string | null;
+  preco: number;
+  imagem_url?: string | null;
+  ativo?: boolean;
+};
+
+export type ProdutoUpdate = Partial<ProdutoInsert>;
 
 export const useProdutos = () => {
   const queryClient = useQueryClient();
@@ -163,6 +187,3 @@ export const useProdutos = () => {
     isRemoving: removerProdutoMutation.isPending
   };
 };
-
-// Export the type for backward compatibility
-export type { Produto };

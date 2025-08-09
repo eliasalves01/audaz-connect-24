@@ -67,7 +67,16 @@ export const useAuth = () => {
         return;
       }
 
-      setProfile(data);
+      const normalized: UserProfile = {
+        id: data.id,
+        user_id: data.user_id,
+        revendedor_id: data.revendedor_id ?? undefined,
+        role: data.role === 'admin' ? 'admin' : 'revendedor',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      };
+
+      setProfile(normalized);
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
     }

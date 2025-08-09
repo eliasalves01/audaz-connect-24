@@ -8,7 +8,7 @@ import { ProductModal } from "@/components/modals/ProductModal";
 import { ProductDetailModal } from "@/components/modals/ProductDetailModal";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
 import { useProdutos } from "@/hooks/useProdutos";
-import type { Produto } from "@/integrations/supabase/types";
+import type { Produto } from "@/hooks/useProdutos";
 import { 
   Plus, 
   Search, 
