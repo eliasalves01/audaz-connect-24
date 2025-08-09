@@ -361,6 +361,41 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          revendedor_id: string | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          revendedor_id?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          revendedor_id?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_revendedor_id_fkey"
+            columns: ["revendedor_id"]
+            isOneToOne: false
+            referencedRelation: "revendedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revendedores: {
         Row: {
           ativo: boolean
@@ -399,7 +434,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_admin_profile: {
+        Args: { admin_email: string; admin_password: string }
+        Returns: Json
+      }
     }
     Enums: {
       canal_captacao:
