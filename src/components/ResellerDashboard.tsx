@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Scanner } from "./Scanner";
 import { useEstoque } from "@/hooks/useEstoque";
 import { useRevendedores } from "@/hooks/useRevendedores";
+import { usePedidosRevendedor } from "@/hooks/usePedidosRevendedor";
 import { 
   Package, 
   TrendingUp, 
@@ -21,7 +22,9 @@ import {
   Tag,
   Palette,
   Ruler,
-  Loader2
+  Loader2,
+  ShoppingCart,
+  FileText
 } from "lucide-react";
 
 interface ResellerDashboardProps {
@@ -38,6 +41,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
   const { toast } = useToast();
   const { revendedores } = useRevendedores();
   const { estoque, loading, marcarComoVendido, buscarPorCodigo, getEstatisticas } = useEstoque(currentRevendedor || undefined);
+  const { pedidos, loading: loadingPedidos } = usePedidosRevendedor(currentRevendedor || undefined);
 
   // Simular login do primeiro revendedor (Maria Silva) - será substituído por autenticação real
   useEffect(() => {
@@ -412,6 +416,80 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
     </div>
   );
 
+  const renderOrders = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-heading-1">Meus Pedidos</h1>
+          <p className="text-body text-muted-foreground">
+            Acompanhe seus pedidos e entregas
+          </p>
+        </div>
+      </div>
+
+      <Card className="card-elevated">
+        <CardHeader>
+          <CardTitle className="text-heading-3 flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Histórico de Pedidos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingPedidos ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Carregando pedidos...</span>
+            </div>
+          ) : pedidos.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhum pedido encontrado</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pedidos.map((pedido) => (
+                <Card key={pedido.id} className="group hover:shadow-audaz-lg transition-all duration-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-primary/10 p-2 rounded-lg">
+                          <ShoppingCart className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-heading-3">{pedido.numero_pedido}</h3>
+                          <p className="text-body-small text-muted-foreground">
+                            {pedido.total_itens} {pedido.total_itens === 1 ? 'item' : 'itens'} • 
+                            Pedido em {new Date(pedido.data_pedido).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-heading-3 text-primary">
+                          R$ {pedido.valor_total.toFixed(2).replace('.', ',')}
+                        </p>
+                        <Badge className={
+                          pedido.status === 'pendente' 
+                            ? 'bg-warning/10 text-warning border-warning/20'
+                            : pedido.status === 'entregue'
+                            ? 'bg-success/10 text-success border-success/20' 
+                            : 'bg-primary/10 text-primary border-primary/20'
+                        }>
+                          {pedido.status === 'pendente' && <Clock className="h-3 w-3 mr-1" />}
+                          {pedido.status === 'entregue' && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {pedido.status.charAt(0).toUpperCase() + pedido.status.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-surface border-b border-border shadow-audaz-sm">
@@ -429,6 +507,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
             <nav className="hidden md:flex space-x-1">
               {[
                 { id: 'inventory', label: 'Estoque' },
+                { id: 'orders', label: 'Pedidos' },
                 { id: 'scanner', label: 'Dar Baixa' },
                 { id: 'reports', label: 'Relatórios' },
               ].map((tab) => (
@@ -454,6 +533,7 @@ export const ResellerDashboard = ({ onLogout }: ResellerDashboardProps) => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'inventory' && renderInventory()}
+        {activeTab === 'orders' && renderOrders()}
         {activeTab === 'scanner' && renderScanner()}
         {activeTab === 'reports' && (
           <div className="text-center py-12">
